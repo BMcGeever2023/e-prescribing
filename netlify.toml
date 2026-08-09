@@ -1,0 +1,27 @@
+# Netlify configuration.
+# The app is a static site in prescribe-portal/. There is no build step.
+# Site-wide PASSWORD PROTECTION (the second layer on top of the app's own
+# login) is a paid-tier feature configured in the Netlify UI, not here — see
+# SETUP.md ("Private hosting"). This file handles the no-indexing headers and
+# some basic hardening.
+
+[build]
+  publish = "prescribe-portal"
+  command = ""
+
+# Keep the whole site out of search indexes (belt-and-braces alongside
+# robots.txt and the <meta name="robots"> tag in index.html).
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive, nosnippet"
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=()"
+
+# Never let the config file (should it ever be added) be cached publicly.
+[[headers]]
+  for = "/js/config.js"
+  [headers.values]
+    Cache-Control = "no-store"

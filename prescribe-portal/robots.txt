@@ -1,0 +1,4 @@
+# This is a private internal tool holding test data that resembles real
+# patient records. Keep it out of every search index.
+User-agent: *
+Disallow: /

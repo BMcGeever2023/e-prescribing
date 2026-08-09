@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+<title>Target Pharmacy — Prescribe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Questrial&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- ================= AUTH GATE ================= -->
+<div class="auth-wrap" id="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <img class="brand-mark" src="assets/logo.png" alt="Target Pharmacy logo">
+      <div>
+        <div class="name">Target Pharmacy</div>
+        <div class="sub">Prescribe</div>
+      </div>
+    </div>
+
+    <div class="auth-tabs">
+      <button type="button" class="active" data-panel="login">Log in</button>
+      <button type="button" data-panel="register">Register as a prescriber</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div class="auth-panel" id="panel-login">
+      <div class="auth-note">Sign in with your work email and password, then confirm the 6-digit code from your authenticator app.</div>
+      <div class="auth-error" id="login-error"></div>
+      <div class="auth-success" id="login-success"></div>
+
+      <!-- step 1: credentials -->
+      <div id="login-step-1">
+        <div class="field"><label>Email</label><input type="email" id="login-email" placeholder="you@target-healthcare.co.uk" autocomplete="username"></div>
+        <div class="field"><label>Password</label><input type="password" id="login-password" placeholder="Your password" autocomplete="current-password"></div>
+        <button type="button" class="btn primary block" id="login-continue-btn">Continue</button>
+      </div>
+
+      <!-- step 2: verify an existing authenticator (TOTP) factor -->
+      <div id="login-step-mfa" style="display:none;">
+        <div class="auth-note">Open your authenticator app and enter the current 6-digit code for Target Pharmacy Prescribe.</div>
+        <div class="field"><label>6-digit code</label><input type="text" id="login-mfa-input" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="000000"></div>
+        <button type="button" class="btn primary block" id="login-verify-btn">Verify &amp; sign in</button>
+        <button type="button" class="btn ghost block" style="margin-top:8px;" onclick="backToLoginStep1()">Back</button>
+      </div>
+
+      <!-- step 3: enrol an authenticator (first login) -->
+      <div id="login-step-enrol" style="display:none;">
+        <div class="auth-note">Set up two-factor authentication. Scan this QR code with an authenticator app (Google Authenticator, Authy, 1Password…), then enter the 6-digit code it shows.</div>
+        <div id="enrol-qr" style="text-align:center; margin:10px 0;"></div>
+        <div class="field"><label>Or enter this setup key manually</label><input type="text" id="enrol-secret" readonly></div>
+        <div class="field"><label>6-digit code</label><input type="text" id="enrol-code-input" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="000000"></div>
+        <button type="button" class="btn primary block" id="enrol-verify-btn">Confirm &amp; finish</button>
+        <button type="button" class="btn ghost block" style="margin-top:8px;" onclick="backToLoginStep1()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- REGISTER -->
+    <div class="auth-panel" id="panel-register" hidden>
+      <div class="auth-note">Registration is a one-off step, similar to signatureRx: we capture your professional registration details and ID, then a pharmacist verifies you before you can issue prescriptions. After registering you'll log in and set up two-factor authentication. Pharmacy accounts are not self-service — they're created by the pharmacy directly.</div>
+      <div class="auth-error" id="register-error"></div>
+      <div class="auth-success" id="register-success"></div>
+
+      <div class="field"><label>Full name</label><input type="text" id="reg-name" placeholder="e.g. Dr. A. Sharma"></div>
+      <div class="field-row2">
+        <div class="field"><label>Prescriber type</label>
+          <select id="reg-proftype">
+            <option>Doctor</option>
+            <option>Independent Nurse Prescriber</option>
+            <option>Independent Pharmacist Prescriber</option>
+            <option>Dentist</option>
+          </select>
+        </div>
+        <div class="field"><label>Registration body</label>
+          <select id="reg-regbody">
+            <option>GMC</option><option>NMC</option><option>GPhC</option><option>GDC</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row2">
+        <div class="field"><label>Registration number</label><input type="text" id="reg-regnumber" placeholder="e.g. 7123456"></div>
+        <div class="field"><label>Organisation</label><input type="text" id="reg-org" placeholder="e.g. Ashgrove Medical Practice"></div>
+      </div>
+      <div class="field">
+        <label>Practice address <span class="hint">(printed on every prescription you sign)</span></label>
+        <input type="text" id="reg-address" placeholder="e.g. 12 High Street, Glasgow, G2 3AB">
+      </div>
+      <div class="field-row2">
+        <div class="field"><label>Email</label><input type="email" id="reg-email" placeholder="you@practice.co.uk"></div>
+        <div class="field"><label>Password</label><input type="password" id="reg-password" placeholder="Choose a password"></div>
+      </div>
+      <div class="field-row2">
+        <div class="field"><label>Signing PIN <span class="hint">(4 digits)</span></label><input type="text" id="reg-pin" maxlength="4" placeholder="e.g. 1357"></div>
+        <div class="field"><label>Confirm PIN</label><input type="text" id="reg-pin2" maxlength="4" placeholder="Repeat PIN"></div>
+      </div>
+      <div class="field">
+        <label>Proof of identity <span class="hint">(passport or driving licence)</span></label>
+        <input type="file" id="reg-iddoc">
+      </div>
+      <div class="field checkline"><input type="checkbox" id="reg-indemnity"><label for="reg-indemnity">I hold current professional indemnity / liability insurance</label></div>
+      <button type="button" class="btn primary block" id="register-submit-btn">Submit for verification</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div class="app" id="app" hidden>
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <div class="brand">
+      <img class="brand-mark" src="assets/logo.png" alt="Target Pharmacy logo">
+      <div class="brand-text"><div class="name">Target Pharmacy</div><div class="sub">Prescribe</div></div>
+      </div>
+    </div>
+    <div class="sidebar-nav-zone">
+      <nav class="mainnav" id="mainnav"></nav>
+      <div class="sidebar-foot" id="sidebar-foot">Every entry is timestamped and logged for GPhC-aligned recordkeeping.</div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div><span class="eyebrow" id="view-eyebrow">Overview</span><h1 id="view-title">Dashboard</h1></div>
+      <div class="topbar-spacer"></div>
+      <div class="search-box" id="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" id="global-search" placeholder="Search ref, patient, drug…" />
+      </div>
+      <div class="user-chip">
+        <div class="who">
+          <div class="n" id="chip-name">—</div>
+          <span class="role-badge" id="chip-role">—</span>
+        </div>
+        <button class="signout-btn" onclick="logout()">Sign out</button>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <section class="view" id="view-dashboard">
+        <div class="stat-grid" id="stat-grid"></div>
+        <div class="section-head">
+          <div><h2 id="feed-heading">Recent activity</h2><div class="desc" id="feed-desc">The latest scripts, newest first.</div></div>
+          <div id="dashboard-cta"></div>
+        </div>
+        <div id="dashboard-feed"></div>
+      </section>
+
+      <!-- INCOMING (pharmacy) -->
+      <section class="view" id="view-incoming" hidden>
+        <div class="section-head">
+          <div><div class="desc">Everything submitted through the portal, by email, or uploaded on paper.</div></div>
+        </div>
+        <div class="tabs" id="incoming-tabs"></div>
+        <div id="incoming-list"></div>
+      </section>
+
+      <!-- PRESCRIPTIONS (pharmacy — full record store) -->
+      <section class="view" id="view-prescriptions" hidden>
+        <div class="section-head">
+          <div><div class="desc">Every prescription ever received or submitted — the permanent, searchable record.</div></div>
+        </div>
+        <div class="search-box" id="prescriptions-search-wrap" style="width:100%; max-width:420px; margin-bottom:16px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" id="prescriptions-search" placeholder="Search ref, patient, drug, prescriber…" />
+        </div>
+        <div id="prescriptions-list"></div>
+      </section>
+
+      <!-- NEW PRESCRIPTION (prescriber, gated) -->
+      <section class="view" id="view-new" hidden>
+        <div class="section-head">
+          <div><div class="desc">Signed with your advanced electronic signature — submitted scripts appear in the pharmacy queue instantly.</div></div>
+        </div>
+        <div id="new-rx-gate"></div>
+        <div class="confirm-box" id="new-confirm"></div>
+        <form class="form-card" id="rx-form" style="display:none;">
+          <div class="field-grid">
+            <div class="field"><label>Patient</label><select id="rx-patient"><option value="">Select existing patient…</option></select></div>
+            <div class="field"><label>&nbsp;</label><label class="checkline"><input type="checkbox" id="rx-new-patient-toggle"> This is a new patient</label></div>
+          </div>
+          <div id="new-patient-fields" style="display:none">
+            <div class="field-grid">
+              <div class="field"><label>Full name</label><input type="text" id="np-name" placeholder="e.g. Alison Reid"></div>
+              <div class="field"><label>Date of birth</label><input type="date" id="np-dob"></div>
+              <div class="field"><label>NHS number <span class="hint">(optional)</span></label><input type="text" id="np-nhs" placeholder="000 000 0000"></div>
+              <div class="field"><label>GP practice / referring clinic</label><input type="text" id="np-gp" placeholder="e.g. Riverside Medical Practice"></div>
+            </div>
+            <div class="field"><label>Known allergies</label><input type="text" id="np-allergies" placeholder="e.g. Penicillin — leave blank if NKDA"></div>
+          </div>
+
+          <hr class="divider">
+          <div class="field-grid">
+            <div class="field"><label>Prescription type</label><div style="padding:9px 11px; border:1px solid var(--line); border-radius:8px; background:var(--paper); font-size:13.5px;">Private</div><input type="hidden" id="rx-type" value="Private"><div class="hint">This portal currently accepts private prescriptions only.</div></div>
+            <div class="field"><label>Priority</label><select id="rx-urgent"><option value="0">Routine</option><option value="1">Urgent</option></select></div>
+          </div>
+
+          <hr class="divider">
+          <div class="section-head" style="margin-bottom:10px;"><h2 style="font-size:14.5px;">Medication</h2><button type="button" class="btn ghost" id="add-med-btn">+ Add medication</button></div>
+          <div id="med-rows"></div>
+
+          <hr class="divider">
+          <div class="field"><label>Notes for the pharmacy <span class="hint">(optional)</span></label><textarea id="rx-notes" placeholder="e.g. Please confirm supply availability before dispensing."></textarea></div>
+
+          <div style="display:flex; gap:10px; margin-top:6px;">
+            <button type="submit" class="btn primary">Continue to sign</button>
+            <button type="button" class="btn" onclick="resetRxForm()">Clear form</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- MY PRESCRIPTIONS (prescriber) -->
+      <section class="view" id="view-mine" hidden>
+        <div class="section-head"><div><div class="desc">Everything you've submitted and its status with the pharmacy.</div></div></div>
+        <div class="tabs" id="mine-tabs"></div>
+        <div id="mine-list"></div>
+      </section>
+
+      <!-- UPLOAD (pharmacy) -->
+      <section class="view" id="view-upload" hidden>
+        <div class="section-head"><div><div class="desc">For prescriptions that arrive by email or on paper — from prescribers not yet using the portal.</div></div></div>
+        <div class="source-toggle">
+          <button type="button" class="tab active" data-src="Paper Upload">Paper prescription</button>
+          <button type="button" class="tab" data-src="Email">Emailed prescription</button>
+        </div>
+        <div class="form-card" style="margin-bottom:18px;">
+          <div class="dropzone" id="dropzone">
+            <div class="icon"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg></div>
+            <div id="dz-text">Drag a file here, or <label for="file-input" style="color:var(--primary); font-weight:600; cursor:pointer; text-decoration:underline;">browse</label></div>
+            <input type="file" id="file-input" accept=".pdf,.jpg,.jpeg,.png" style="display:none">
+          </div>
+        </div>
+        <div id="ocr-status" style="display:none;" class="form-card"><p style="font-size:13px; color:var(--muted); margin-top:0;" id="ocr-status-text">Reading document…</p></div>
+        <form class="form-card" id="upload-form" style="display:none;">
+          <p style="font-size:12px; color:var(--muted); margin-top:0;">Extracted from <strong id="upload-filename"></strong> — check every field before sending it on.</p>
+          <div class="field-grid">
+            <div class="field"><label>Patient name</label><input type="text" id="up-patient" required></div>
+            <div class="field"><label>Date of birth</label><input type="date" id="up-dob"></div>
+            <div class="field"><label>Prescriber name</label><input type="text" id="up-prescriber" required></div>
+            <div class="field"><label>Prescriber organisation</label><input type="text" id="up-org"></div>
+          </div>
+          <div class="field"><label>Medication</label><input type="text" id="up-drug" placeholder="e.g. Melatonin 1mg/ml oral solution (unlicensed) — 5ml at night, 150ml"></div>
+          <div class="field"><label>Notes</label><textarea id="up-notes" placeholder="Anything unclear on the original document"></textarea></div>
+          <button type="submit" class="btn primary">Add to incoming queue</button>
+        </form>
+      </section>
+
+      <!-- PATIENTS (pharmacy) -->
+      <section class="view" id="view-patients" hidden>
+        <div class="section-head"><div><div class="desc">Everyone with a prescription on file in this portal.</div></div></div>
+        <div class="patient-list" id="patient-list"></div>
+      </section>
+
+      <!-- FORMULARY (pharmacy only) -->
+      <section class="view" id="view-formulary" hidden>
+        <div class="section-head"><div><div class="desc">The drug list prescribers choose from in New prescription. Anything outside this list is flagged as off-formulary for review. Only pharmacy accounts can edit it.</div></div></div>
+        <div class="form-card" style="margin-bottom:18px; display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+          <div class="field" style="flex:1; min-width:220px; margin-bottom:0;"><label>Add an item</label><input type="text" id="formulary-new-item" placeholder="e.g. Prednisolone 5mg/5ml oral solution"></div>
+          <button type="button" class="btn primary" id="formulary-add-btn">Add to formulary</button>
+        </div>
+        <div class="formulary-list" id="formulary-list"></div>
+      </section>
+
+      <!-- AUDIT (pharmacy) -->
+      <section class="view" id="view-audit" hidden>
+        <div class="section-head"><div><div class="desc">Every action — prescriptions and account changes — timestamped.</div></div></div>
+        <div class="audit-table" id="audit-table"></div>
+      </section>
+
+      <!-- PRESCRIBERS admin (pharmacy) -->
+      <section class="view" id="view-prescribers" hidden>
+        <div class="section-head"><div><div class="desc">Registration must be independently verified before an account can issue prescriptions — mirrors GMC/NMC verification used by services like CloudRx and signatureRx.</div></div></div>
+        <div class="verify-table" id="verify-table"></div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<div id="overlay" class="overlay" hidden onclick="closeDrawer()"></div>
+<aside id="drawer" class="drawer" hidden></aside>
+<div id="sign-modal-root"></div>
+<div id="toast-container"></div>
+
+<!-- config.js (gitignored) sets window.PORTAL_CONFIG before the app module runs -->
+<script src="js/config.js"></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

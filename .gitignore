@@ -1,0 +1,38 @@
+# ---- Secrets / local config (NEVER commit) ----
+# Front-end runtime config holds the Supabase URL + anon key.
+# The anon key is public-safe, but we keep the real file untracked so
+# nobody ever pastes a service_role key into a committed file by accident.
+prescribe-portal/js/config.js
+
+# Environment files of any kind
+.env
+.env.*
+*.env
+
+# Anything that looks like a real secret / service-role key
+*service_role*
+*service-role*
+*secret*
+*.pem
+*.key
+
+# ---- Supabase ----
+.supabase/
+supabase/.temp/
+supabase/.branches/
+
+# ---- Netlify ----
+.netlify/
+
+# ---- Node (in case tooling is added later) ----
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# ---- OS / editor junk ----
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+.vscode/
+.idea/
