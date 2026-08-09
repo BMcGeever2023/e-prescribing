@@ -24,13 +24,19 @@ Some things remain deliberately simulated for now — see **"What's simulated"**
 No build step, no dependencies. First fill in `js/config.js` with your
 Supabase URL + anon key (copy `js/config.example.js` → `js/config.js`; see
 `../SETUP.md`). Then serve the folder over `http://` (a real origin is
-required for Supabase Auth / MFA — `file://` will not work):
+required for Supabase Auth / MFA — `file://` will not work).
+
+This machine has neither Python nor Node installed, so the simplest option is
+the bundled zero-install PowerShell server (run from the repo root, one level
+up):
 
 ```bash
-# from this directory
-python -m http.server 8000
+powershell -ExecutionPolicy Bypass -File serve.ps1
 # then open http://localhost:8000
 ```
+
+If you do have Python or Node, `python -m http.server 8000` (from this folder)
+or `npx serve` work just as well.
 
 ## Project structure
 

@@ -88,14 +88,18 @@ Pharmacy accounts are **not** self-service — you create them here.
 
 ## 6. Run it locally against the real project
 
-From the `prescribe-portal/` folder:
+This machine has no Python or Node, so use the bundled zero-install server.
+From the repo root:
 
 ```bash
-python -m http.server 8000
+powershell -ExecutionPolicy Bypass -File serve.ps1
 ```
 
 Open <http://localhost:8000>. (Uses the real Supabase project — the anon key is
-safe in the browser; RLS enforces access.)
+safe in the browser; RLS enforces access.) `serve.ps1` needs a real origin,
+which it provides; opening `index.html` via `file://` will not work with
+Supabase Auth. *(If you later install Python or Node, `python -m http.server
+8000` from `prescribe-portal/` or `npx serve prescribe-portal` also work.)*
 
 ### End-to-end smoke test
 1. **Register** as a prescriber (Register tab) → after submitting, you're on the
