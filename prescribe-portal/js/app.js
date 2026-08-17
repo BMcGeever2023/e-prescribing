@@ -238,11 +238,19 @@ document.getElementById('register-submit-btn').addEventListener('click', async (
     return fail('Account created — check your email to confirm it, then log in to finish setup. (For internal testing, ask the pharmacy to turn off email confirmation.)');
   }
 
+  // 1b. upload the ID document to the private bucket, under this user's folder
+  //     (path: {userId}/{timestamp}-{filename}) so a pharmacist can review it.
+  const safeName = idFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const idPath = `${signUp.user.id}/${Date.now()}-${safeName}`;
+  const { error: upErr } = await supabase.storage.from('prescriber-ids')
+    .upload(idPath, idFile, { contentType: idFile.type || undefined, upsert: false });
+  if(upErr){ return fail('Could not upload your ID document: ' + upErr.message); }
+
   // 2. create the prescriber profile (PIN hashed server-side in the RPC)
   const { error: rpcErr } = await supabase.rpc('complete_prescriber_registration', {
     p_name:name, p_prof_role:profType, p_reg_body:regBody, p_reg_number:regNumber,
     p_organisation:org, p_address:address, p_email:email, p_pin:pin,
-    p_id_doc: idFile.name, p_indemnity: true
+    p_id_doc: idPath, p_indemnity: true
   });
   if(rpcErr){ return fail(rpcErr.message); }
 
@@ -925,6 +933,24 @@ function renderAudit(){
 }
 
 /* ================= PRESCRIBERS ADMIN (pharmacy) ================= */
+// id_doc holds a storage path ({userId}/{ts}-{filename}) for accounts registered
+// with real file upload; older/seed accounts may hold just a bare filename.
+function idFileName(path){ return String(path||'').split('/').pop().replace(/^\d+-/, ''); }
+function idDocCellHtml(p){
+  const indem = p.indemnity ? ' · Indemnity ✓' : ' · Indemnity ✗';
+  if(p.idDoc && p.idDoc.includes('/')){
+    return `<button class="btn ghost" style="padding:4px 9px; font-size:11px;" onclick="viewIdDoc('${p.id}')">View ID</button> <span style="color:var(--muted); font-size:11px;">${esc(idFileName(p.idDoc))}</span>${indem}`;
+  }
+  return `<span>${esc(p.idDoc || 'No ID')}${p.idDoc ? ' <span style="color:var(--muted); font-size:11px;">(no file stored)</span>' : ''}</span>${indem}`;
+}
+async function viewIdDoc(id){
+  const p = state.prescribers.find(x=>x.id===id);
+  if(!p || !p.idDoc){ toast('No ID document on file.'); return; }
+  if(!p.idDoc.includes('/')){ toast('This account was registered before ID files were stored — no file to view.'); return; }
+  const { data, error } = await supabase.storage.from('prescriber-ids').createSignedUrl(p.idDoc, 120);
+  if(error){ toast(error.message); return; }
+  window.open(data.signedUrl, '_blank', 'noopener');
+}
 function renderPrescribersAdmin(){
   const rows = [...state.prescribers].sort((a,b)=> (a.verified === b.verified) ? 0 : (a.verified ? 1 : -1));
   const head = `<div class="row head"><div>Prescriber</div><div>Registration</div><div>ID &amp; indemnity</div><div>Status</div><div>Action</div></div>`;
@@ -932,7 +958,7 @@ function renderPrescribersAdmin(){
     <div class="row">
       <div><strong>${esc(p.name)}</strong><br><span style="color:var(--muted);">${esc(p.profRole)} · ${esc(p.organisation)}</span></div>
       <div>${esc(p.regBody)} ${esc(p.regNumber)}<br><span style="color:var(--muted); font-size:11px;">${esc(p.address||'No address on file')}</span></div>
-      <div>${esc(p.idDoc)}${p.indemnity ? ' · Indemnity ✓' : ' · Indemnity ✗'}</div>
+      <div>${idDocCellHtml(p)}</div>
       <div><span class="badge ${p.verified?'verified':'pending'}">${p.verified ? 'Verified' : 'Pending'}</span></div>
       <div>${p.verified
           ? `<span style="color:var(--muted); font-size:11.5px;">by ${esc(p.verifiedBy)}<br>${fmtDate(p.verifiedAt)}</span>`
@@ -1000,7 +1026,7 @@ Object.assign(window, {
   openDrawer, closeDrawer, goView, goIncoming, goMine, logout, backToLoginStep1,
   resetRxForm, confirmSign, closeSignModal, advanceStatus, exportToPMR, promptQuery,
   promptReject, promptRespond, verifyPrescriber, rejectPrescriber, editFormularyItem,
-  removeFormularyItem, openPatient
+  removeFormularyItem, openPatient, viewIdDoc
 });
 
 /* ================= INIT ================= */

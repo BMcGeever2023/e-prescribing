@@ -25,14 +25,16 @@ Supabase and Netlify accounts. Work top to bottom.
 ## 2. Create the schema
 
 1. In the project, open **SQL Editor** → **New query**.
-2. Run these four files **in order** (open each file in the repo, copy all of
+2. Run these files **in order** (open each file in the repo, copy all of
    it, paste, **Run**):
    1. `supabase/migrations/0001_schema.sql`
    2. `supabase/migrations/0002_rls.sql`
    3. `supabase/migrations/0003_functions.sql`
-   4. `supabase/seed.sql`
+   4. `supabase/migrations/0004_storage.sql`  ← private bucket for prescriber ID documents
+   5. `supabase/seed.sql`
 3. Each should report success. After this you have all tables, RLS policies,
-   RPCs, the formulary, and a few test patients.
+   RPCs, the private `prescriber-ids` storage bucket, the formulary, and a few
+   test patients.
 
 ## 3. Auth settings
 
