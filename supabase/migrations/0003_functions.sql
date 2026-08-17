@@ -24,7 +24,8 @@ create or replace function public.complete_prescriber_registration(
   p_organisation text, p_address text, p_email text, p_pin text,
   p_id_doc text default null, p_indemnity boolean default false
 ) returns void
-language plpgsql security definer set search_path = public as $$
+-- includes `extensions` so pgcrypto's crypt()/gen_salt() resolve on Supabase
+language plpgsql security definer set search_path = public, extensions as $$
 begin
   if auth.uid() is null then raise exception 'Not authenticated'; end if;
   if p_pin !~ '^[0-9]{4}$' then raise exception 'Signing PIN must be exactly 4 digits'; end if;
@@ -54,7 +55,8 @@ create or replace function public.create_prescription(
   p_patient_id uuid, p_new_patient jsonb, p_items jsonb,
   p_type text, p_urgent boolean, p_notes text, p_pin text
 ) returns text
-language plpgsql security definer set search_path = public as $$
+-- includes `extensions` so pgcrypto's crypt()/gen_random_bytes() resolve on Supabase
+language plpgsql security definer set search_path = public, extensions as $$
 declare
   v_presc   public.prescribers%rowtype;
   v_pid     uuid;

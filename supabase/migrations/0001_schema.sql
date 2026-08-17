@@ -7,8 +7,11 @@
 -- ============================================================================
 
 -- pgcrypto gives us crypt()/gen_salt() (signing-PIN hashing) and
--- gen_random_bytes()/gen_random_uuid() (ids + signature ids).
-create extension if not exists pgcrypto;
+-- gen_random_bytes() (signature ids). On Supabase, extensions live in the
+-- dedicated `extensions` schema, so we install it there and the functions that
+-- use it set `search_path = public, extensions` (see 0003_functions.sql).
+create schema if not exists extensions;
+create extension if not exists pgcrypto with schema extensions;
 
 -- ---------------------------------------------------------------------------
 -- Accounts
