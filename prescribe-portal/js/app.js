@@ -481,27 +481,45 @@ function renderDashboard(){
 }
 
 /* ================= INCOMING (pharmacy) ================= */
-const INCOMING_TABS = [ {key:'all',label:'All'}, {key:'urgent',label:'Urgent'}, {key:'received',label:'Received'}, {key:'in_review',label:'In review'}, {key:'query',label:'Query raised'}, {key:'exported',label:'Dispensed'}, {key:'uploaded',label:'Uploaded'} ];
+// Incoming is the live work queue: only pre-dispensed scripts appear there,
+// so no Dispensed tab. Dispensed/rejected live on the Prescriptions page.
+const INCOMING_TABS = [ {key:'all',label:'All'}, {key:'urgent',label:'Urgent'}, {key:'received',label:'Received'}, {key:'in_review',label:'In review'}, {key:'query',label:'Query raised'}, {key:'uploaded',label:'Uploaded'} ];
+// The prescriber's own view still tracks scripts through to Dispensed.
+const MINE_TABS = [ {key:'all',label:'All'}, {key:'urgent',label:'Urgent'}, {key:'received',label:'Received'}, {key:'in_review',label:'In review'}, {key:'query',label:'Query raised'}, {key:'exported',label:'Dispensed'} ];
 function todayStartDate(){ const d = new Date(); d.setHours(0,0,0,0); return d; }
+// Date-range helper: from/to are yyyy-mm-dd values from <input type="date">.
+function inDateRange(iso, fromVal, toVal){
+  const t = new Date(iso).getTime();
+  if(fromVal && t < new Date(fromVal + 'T00:00:00').getTime()) return false;
+  if(toVal && t > new Date(toVal + 'T23:59:59.999').getTime()) return false;
+  return true;
+}
 function goIncoming(filterKey){ incomingFilter = filterKey; goView('incoming'); }
 function goMine(filterKey){ mineFilter = filterKey; goView('mine'); }
 function renderIncoming(){
   document.getElementById('incoming-tabs').innerHTML = INCOMING_TABS.map(t => `<button type="button" class="tab ${incomingFilter===t.key?'active':''}" data-key="${t.key}">${t.label}</button>`).join('');
   document.querySelectorAll('#incoming-tabs .tab').forEach(b=>{ b.onclick = ()=>{ incomingFilter = b.dataset.key; renderIncoming(); }; });
-  let list = [...state.prescriptions];
+  // The queue only holds open work — anything not yet dispensed or rejected.
+  let list = state.prescriptions.filter(r=> r.status==='received' || r.status==='in_review' || r.status==='query');
+  const from = document.getElementById('incoming-from').value;
+  const to = document.getElementById('incoming-to').value;
+  if(from || to) list = list.filter(r=> inDateRange(r.createdAt, from, to));
   if(incomingFilter === 'urgent') list = list.filter(r=>r.urgent);
   else if(incomingFilter === 'today') list = list.filter(r=> new Date(r.createdAt) >= todayStartDate());
   else if(incomingFilter === 'awaiting') list = list.filter(r=> r.status==='received' || r.status==='query');
   else if(incomingFilter === 'uploaded') list = list.filter(r=> r.source !== 'Portal');
   else if(incomingFilter !== 'all') list = list.filter(r=>r.status===incomingFilter);
   list.sort((a,b)=> new Date(b.createdAt)-new Date(a.createdAt));
-  document.getElementById('incoming-list').innerHTML = list.map(scriptCardHtml).join('') || `<div class="empty"><div class="big">No prescriptions in this view</div>Try a different filter.</div>`;
+  document.getElementById('incoming-list').innerHTML = list.map(scriptCardHtml).join('') || `<div class="empty"><div class="big">No prescriptions in this view</div>Try a different filter${(from||to)?' or date range':''}. Dispensed and rejected scripts are on the Prescriptions page.</div>`;
 }
 
 /* ================= PRESCRIPTIONS (pharmacy — full record store) ================= */
 function renderPrescriptionsModule(){
   const q = (document.getElementById('prescriptions-search').value || '').trim().toLowerCase();
   let list = [...state.prescriptions];
+  const from = document.getElementById('prescriptions-from').value;
+  const to = document.getElementById('prescriptions-to').value;
+  if(from || to) list = list.filter(r=> inDateRange(r.createdAt, from, to));
   if(q){
     list = list.filter(r =>
       r.ref.toLowerCase().includes(q) ||
@@ -517,11 +535,24 @@ function renderPrescriptionsModule(){
 }
 document.getElementById('prescriptions-search').addEventListener('input', renderPrescriptionsModule);
 
+/* ---- date-range filters ---- */
+['incoming-from','incoming-to'].forEach(id=> document.getElementById(id).addEventListener('change', renderIncoming));
+document.getElementById('incoming-dates-clear').addEventListener('click', ()=>{
+  document.getElementById('incoming-from').value = '';
+  document.getElementById('incoming-to').value = '';
+  renderIncoming();
+});
+['prescriptions-from','prescriptions-to'].forEach(id=> document.getElementById(id).addEventListener('change', renderPrescriptionsModule));
+document.getElementById('prescriptions-dates-clear').addEventListener('click', ()=>{
+  document.getElementById('prescriptions-from').value = '';
+  document.getElementById('prescriptions-to').value = '';
+  renderPrescriptionsModule();
+});
+
 /* ================= MY PRESCRIPTIONS (prescriber) ================= */
 function renderMine(){
   const u = currentUser();
-  // prescribers submit via the portal only, so the Uploaded tab is pharmacy-side
-  document.getElementById('mine-tabs').innerHTML = INCOMING_TABS.filter(t=>t.key!=='uploaded').map(t => `<button type="button" class="tab ${mineFilter===t.key?'active':''}" data-key="${t.key}">${t.label}</button>`).join('');
+  document.getElementById('mine-tabs').innerHTML = MINE_TABS.map(t => `<button type="button" class="tab ${mineFilter===t.key?'active':''}" data-key="${t.key}">${t.label}</button>`).join('');
   document.querySelectorAll('#mine-tabs .tab').forEach(b=>{ b.onclick = ()=>{ mineFilter = b.dataset.key; renderMine(); }; });
   let list = state.prescriptions.filter(r=>r.prescriberId===u.id);
   if(mineFilter === 'urgent') list = list.filter(r=>r.urgent);
