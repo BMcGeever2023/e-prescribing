@@ -30,6 +30,7 @@ export const supabase = createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: false
+    // true so password-recovery links from reset emails are picked up on load
+    detectSessionInUrl: true
   }
 });

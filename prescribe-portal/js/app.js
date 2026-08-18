@@ -127,13 +127,15 @@ function activatePanel(panel){
 }
 
 /* ================= AUTH: LOGIN + MFA ================= */
-function showLoginStep(step){ // '1' | 'mfa' | 'enrol'
-  document.getElementById('login-step-1').style.display    = step === '1'     ? 'block' : 'none';
-  document.getElementById('login-step-mfa').style.display  = step === 'mfa'   ? 'block' : 'none';
-  document.getElementById('login-step-enrol').style.display= step === 'enrol' ? 'block' : 'none';
+function showLoginStep(step){ // '1' | 'mfa' | 'enrol' | 'reset' | 'newpw'
+  const steps = { '1':'login-step-1', mfa:'login-step-mfa', enrol:'login-step-enrol', reset:'login-step-reset', newpw:'login-step-newpw' };
+  for(const [key, id] of Object.entries(steps)){
+    document.getElementById(id).style.display = key === step ? 'block' : 'none';
+  }
 }
 function loginError(msg){ const e = document.getElementById('login-error'); e.textContent = msg; e.classList.add('show'); }
-function clearLoginError(){ document.getElementById('login-error').classList.remove('show'); }
+function loginSuccess(msg){ const e = document.getElementById('login-success'); e.textContent = msg; e.classList.add('show'); }
+function clearLoginError(){ document.getElementById('login-error').classList.remove('show'); document.getElementById('login-success').classList.remove('show'); }
 
 document.getElementById('login-continue-btn').addEventListener('click', async ()=>{
   clearLoginError();
@@ -203,6 +205,49 @@ async function backToLoginStep1(){
   showLoginStep('1');
   clearLoginError();
 }
+
+/* ================= AUTH: FORGOT / RESET PASSWORD ================= */
+document.getElementById('forgot-link').addEventListener('click', e=>{
+  e.preventDefault();
+  clearLoginError();
+  document.getElementById('reset-email').value = document.getElementById('login-email').value.trim();
+  showLoginStep('reset');
+  document.getElementById('reset-email').focus();
+});
+
+document.getElementById('reset-send-btn').addEventListener('click', async ()=>{
+  clearLoginError();
+  const email = document.getElementById('reset-email').value.trim();
+  if(!email){ loginError('Enter your account email.'); return; }
+  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+  if(error){ loginError(error.message); return; }
+  showLoginStep('1');
+  loginSuccess(`If an account exists for ${email}, a password-reset link is on its way — check your inbox (and spam) and open it on this device.`);
+});
+
+// The reset-email link lands back on the app with a recovery token; supabase-js
+// picks it up (detectSessionInUrl) and fires PASSWORD_RECOVERY.
+supabase.auth.onAuthStateChange((event)=>{
+  if(event === 'PASSWORD_RECOVERY'){
+    clearLoginError();
+    showLoginStep('newpw');
+  }
+});
+
+document.getElementById('newpw-save-btn').addEventListener('click', async ()=>{
+  clearLoginError();
+  const pw = document.getElementById('newpw-input').value;
+  const pw2 = document.getElementById('newpw-confirm').value;
+  if(pw.length < 8){ loginError('Choose a password of at least 8 characters.'); return; }
+  if(pw !== pw2){ loginError('Passwords don\'t match.'); return; }
+  const { error } = await supabase.auth.updateUser({ password: pw });
+  if(error){ loginError(error.message); return; }
+  document.getElementById('newpw-input').value = '';
+  document.getElementById('newpw-confirm').value = '';
+  await supabase.auth.signOut();
+  showLoginStep('1');
+  loginSuccess('Password updated — log in with your new password.');
+});
 
 /* ================= AUTH: REGISTER (prescribers only) ================= */
 document.getElementById('register-submit-btn').addEventListener('click', async ()=>{
@@ -1030,8 +1075,19 @@ Object.assign(window, {
 });
 
 /* ================= INIT ================= */
+// Captured before supabase-js consumes the URL hash.
+const initialHash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+
 (async function init(){
   showLoginStep('1');
+  // Arriving from a password-reset email: let the PASSWORD_RECOVERY event
+  // drive the UI instead of the normal session routing below.
+  if(initialHash.get('type') === 'recovery') return;
+  // Expired/invalid recovery link: Supabase returns the reason in the hash.
+  if(initialHash.get('error_description')){
+    loginError(initialHash.get('error_description').replace(/\+/g,' ') + ' — request a new reset link via "Forgot password?".');
+    return;
+  }
   const { data:{ session } } = await supabase.auth.getSession();
   if(!session) return;
   const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();

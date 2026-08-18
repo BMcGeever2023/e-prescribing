@@ -29,7 +29,7 @@
 
     <!-- LOGIN -->
     <div class="auth-panel" id="panel-login">
-      <div class="auth-note">Sign in with your work email and password, then confirm the 6-digit code from your authenticator app.</div>
+      <div class="auth-note">Sign in with your email and password, then confirm the 6-digit code from your authenticator app.</div>
       <div class="auth-error" id="login-error"></div>
       <div class="auth-success" id="login-success"></div>
 
@@ -38,6 +38,23 @@
         <div class="field"><label>Email</label><input type="email" id="login-email" placeholder="you@target-healthcare.co.uk" autocomplete="username"></div>
         <div class="field"><label>Password</label><input type="password" id="login-password" placeholder="Your password" autocomplete="current-password"></div>
         <button type="button" class="btn primary block" id="login-continue-btn">Continue</button>
+        <div style="text-align:center; margin-top:10px;"><a href="#" id="forgot-link" style="font-size:12.5px; color:var(--muted);">Forgot password?</a></div>
+      </div>
+
+      <!-- step: request a password-reset email -->
+      <div id="login-step-reset" style="display:none;">
+        <div class="auth-note">Enter your account email and we'll send you a password-reset link. Open it on this device.</div>
+        <div class="field"><label>Email</label><input type="email" id="reset-email" placeholder="you@target-healthcare.co.uk" autocomplete="username"></div>
+        <button type="button" class="btn primary block" id="reset-send-btn">Send reset link</button>
+        <button type="button" class="btn ghost block" style="margin-top:8px;" onclick="backToLoginStep1()">Back</button>
+      </div>
+
+      <!-- step: set a new password (arrived via the reset email link) -->
+      <div id="login-step-newpw" style="display:none;">
+        <div class="auth-note">Choose a new password for your account. You'll then log in again with it (and your usual authenticator code).</div>
+        <div class="field"><label>New password</label><input type="password" id="newpw-input" autocomplete="new-password" placeholder="At least 8 characters"></div>
+        <div class="field"><label>Confirm new password</label><input type="password" id="newpw-confirm" autocomplete="new-password" placeholder="Repeat password"></div>
+        <button type="button" class="btn primary block" id="newpw-save-btn">Save new password</button>
       </div>
 
       <!-- step 2: verify an existing authenticator (TOTP) factor -->

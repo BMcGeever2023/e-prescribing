@@ -18,6 +18,12 @@
   echo "wrote prescribe-portal/js/config.js for $SUPABASE_URL"
   """
 
+[build.environment]
+  # These two values are *meant* to appear in the published site (config.js is
+  # the browser-facing config; the anon key is public-safe under RLS). Without
+  # this, Netlify's secrets scanner sees them in the output and fails the build.
+  SECRETS_SCAN_OMIT_KEYS = "SUPABASE_URL,SUPABASE_ANON_KEY"
+
 # Keep the whole site out of search indexes (belt-and-braces alongside
 # robots.txt and the <meta name="robots"> tag in index.html).
 [[headers]]
