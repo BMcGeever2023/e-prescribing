@@ -96,7 +96,9 @@ async function refreshAndDrawer(id){ await fetchState(); renderAll(); if(id) ope
 function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmtDate(iso){ if(!iso) return '—'; const d = new Date(iso); return d.toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }); }
 function timeAgo(iso){ const mins = Math.round((Date.now() - new Date(iso).getTime())/60000); if(mins < 60) return mins + 'm ago'; const hrs = Math.round(mins/60); if(hrs < 24) return hrs + 'h ago'; return Math.round(hrs/24) + 'd ago'; }
-function statusLabel(s){ return { received:'Received', in_review:'In review', query:'Query raised', exported:'Exported to PMR', rejected:'Rejected' }[s] || s; }
+// NB: the internal status key is still `exported` (DB check constraint);
+// only the user-facing wording is "Dispensed".
+function statusLabel(s){ return { received:'Received', in_review:'In review', query:'Query raised', exported:'Dispensed', rejected:'Rejected' }[s] || s; }
 function toast(msg){ const c = document.getElementById('toast-container'); const el = document.createElement('div'); el.className = 'toast'; el.textContent = msg; c.appendChild(el); setTimeout(()=> el.remove(), 3400); }
 
 function currentUser(){
@@ -462,7 +464,7 @@ function renderDashboard(){
       <div class="stat-card" onclick="goMine('today')"><div class="label">Submitted today <span class="date-tag">${todayShort}</span></div><div class="value">${submittedToday}</div><div class="foot">By you</div></div>
       <div class="stat-card" onclick="goMine('awaiting')"><div class="label">Awaiting pharmacy review</div><div class="value">${awaiting}</div><div class="foot">Received or in review</div></div>
       <div class="stat-card" onclick="goMine('query')"><div class="label">Queries needing you</div><div class="value ${queries?'alert':''}">${queries}</div><div class="foot">Reply from My prescriptions</div></div>
-      <div class="stat-card" onclick="goMine('exported')"><div class="label">Exported to PMR</div><div class="value">${exported}</div><div class="foot">All time</div></div>`;
+      <div class="stat-card" onclick="goMine('exported')"><div class="label">Dispensed</div><div class="value">${exported}</div><div class="foot">All time</div></div>`;
     document.getElementById('feed-heading').textContent = 'Your recent submissions';
     document.getElementById('feed-desc').textContent = 'The latest scripts you\'ve signed and sent.';
     if(u.verified){
@@ -479,7 +481,7 @@ function renderDashboard(){
 }
 
 /* ================= INCOMING (pharmacy) ================= */
-const INCOMING_TABS = [ {key:'all',label:'All'}, {key:'urgent',label:'Urgent'}, {key:'received',label:'Received'}, {key:'in_review',label:'In review'}, {key:'query',label:'Query raised'}, {key:'exported',label:'Exported'} ];
+const INCOMING_TABS = [ {key:'all',label:'All'}, {key:'urgent',label:'Urgent'}, {key:'received',label:'Received'}, {key:'in_review',label:'In review'}, {key:'query',label:'Query raised'}, {key:'exported',label:'Dispensed'}, {key:'uploaded',label:'Uploaded'} ];
 function todayStartDate(){ const d = new Date(); d.setHours(0,0,0,0); return d; }
 function goIncoming(filterKey){ incomingFilter = filterKey; goView('incoming'); }
 function goMine(filterKey){ mineFilter = filterKey; goView('mine'); }
@@ -490,6 +492,7 @@ function renderIncoming(){
   if(incomingFilter === 'urgent') list = list.filter(r=>r.urgent);
   else if(incomingFilter === 'today') list = list.filter(r=> new Date(r.createdAt) >= todayStartDate());
   else if(incomingFilter === 'awaiting') list = list.filter(r=> r.status==='received' || r.status==='query');
+  else if(incomingFilter === 'uploaded') list = list.filter(r=> r.source !== 'Portal');
   else if(incomingFilter !== 'all') list = list.filter(r=>r.status===incomingFilter);
   list.sort((a,b)=> new Date(b.createdAt)-new Date(a.createdAt));
   document.getElementById('incoming-list').innerHTML = list.map(scriptCardHtml).join('') || `<div class="empty"><div class="big">No prescriptions in this view</div>Try a different filter.</div>`;
@@ -517,7 +520,8 @@ document.getElementById('prescriptions-search').addEventListener('input', render
 /* ================= MY PRESCRIPTIONS (prescriber) ================= */
 function renderMine(){
   const u = currentUser();
-  document.getElementById('mine-tabs').innerHTML = INCOMING_TABS.map(t => `<button type="button" class="tab ${mineFilter===t.key?'active':''}" data-key="${t.key}">${t.label}</button>`).join('');
+  // prescribers submit via the portal only, so the Uploaded tab is pharmacy-side
+  document.getElementById('mine-tabs').innerHTML = INCOMING_TABS.filter(t=>t.key!=='uploaded').map(t => `<button type="button" class="tab ${mineFilter===t.key?'active':''}" data-key="${t.key}">${t.label}</button>`).join('');
   document.querySelectorAll('#mine-tabs .tab').forEach(b=>{ b.onclick = ()=>{ mineFilter = b.dataset.key; renderMine(); }; });
   let list = state.prescriptions.filter(r=>r.prescriberId===u.id);
   if(mineFilter === 'urgent') list = list.filter(r=>r.urgent);
@@ -583,13 +587,21 @@ function openDrawer(id){
   if(u.role === 'pharmacy'){
     if(rx.status === 'received' || rx.status === 'query') actions += `<button class="btn primary" onclick="advanceStatus('${rx.id}','in_review')">Start review</button>`;
     if(rx.status === 'in_review'){
-      actions += `<button class="btn primary" onclick="exportToPMR('${rx.id}')">Validate &amp; export to PMR</button>`;
+      actions += `<button class="btn primary" onclick="exportToPMR('${rx.id}')">Validate &amp; dispense</button>`;
       actions += `<button class="btn" onclick="promptQuery('${rx.id}')">Raise query</button>`;
     }
+    if(rx.status === 'exported') actions += `<button class="btn primary" onclick="promptTracking('${rx.id}')">Add prescription tracking details</button>`;
     if(rx.status !== 'exported' && rx.status !== 'rejected') actions += `<button class="btn danger" onclick="promptReject('${rx.id}')">Reject</button>`;
   } else if(u.role === 'prescriber' && rx.prescriberId === u.id && rx.status === 'query'){
     actions += `<button class="btn primary" onclick="promptRespond('${rx.id}')">Respond to query</button>`;
   }
+
+  // Latest tracking details (if any) get their own section; the full trail
+  // stays in the audit history below.
+  const lastTracking = [...rx.history].reverse().find(h=>h.action === 'Tracking details added');
+  const trackingHtml = lastTracking ? `
+    <h4 style="font-size:12.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin:14px 0 6px;">Tracking</h4>
+    <p style="font-size:13px; margin:0;">${esc(lastTracking.detail)} <span style="color:var(--muted);">— ${fmtDate(lastTracking.ts)}</span></p>` : '';
 
   drawer.innerHTML = `
     <div class="drawer-head">
@@ -617,6 +629,7 @@ function openDrawer(id){
       <h4 style="font-size:12.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin-bottom:8px;">Medication</h4>
       ${itemsHtml}
       ${rx.notes ? `<h4 style="font-size:12.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin:14px 0 6px;">Notes</h4><p style="font-size:13px; margin:0;">${esc(rx.notes)}</p>` : ''}
+      ${trackingHtml}
       ${sigHtml}
       <div class="drawer-actions">${actions}</div>
       <h4 style="font-size:12.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin:20px 0 4px;">Audit trail</h4>
@@ -633,11 +646,19 @@ async function advanceStatus(id, status){
   await refreshAndDrawer(id); toast('Marked as in review.');
 }
 async function exportToPMR(id){
-  const { error } = await supabase.rpc('update_prescription_status', { p_rx_id:id, p_status:'exported', p_detail:'Handed off for dispensing in Target Pharmacy PMR.' });
+  const { error } = await supabase.rpc('update_prescription_status', { p_rx_id:id, p_status:'exported', p_detail:'Dispensed via Target Pharmacy PMR.' });
   if(error){ toast(error.message); return; }
   await refreshAndDrawer(id);
   const rx = state.prescriptions.find(r=>r.id===id);
-  toast(`${rx ? rx.ref : 'Prescription'} exported to PMR.`);
+  toast(`${rx ? rx.ref : 'Prescription'} marked as dispensed.`);
+}
+async function promptTracking(id){
+  const detail = prompt('Tracking details (courier, tracking number, expected delivery):');
+  if(detail === null) return;
+  if(!detail.trim()){ toast('Enter the tracking details.'); return; }
+  const { error } = await supabase.rpc('add_tracking_details', { p_rx_id:id, p_detail:detail.trim() });
+  if(error){ toast(error.message); return; }
+  await refreshAndDrawer(id); toast('Tracking details added.');
 }
 async function promptQuery(id){
   const reason = prompt('What needs clarifying before this can be dispensed?');
@@ -1069,7 +1090,7 @@ function renderAll(){
 // uses inline onclick="..." handlers, so attach the ones it references.
 Object.assign(window, {
   openDrawer, closeDrawer, goView, goIncoming, goMine, logout, backToLoginStep1,
-  resetRxForm, confirmSign, closeSignModal, advanceStatus, exportToPMR, promptQuery,
+  resetRxForm, confirmSign, closeSignModal, advanceStatus, exportToPMR, promptTracking, promptQuery,
   promptReject, promptRespond, verifyPrescriber, rejectPrescriber, editFormularyItem,
   removeFormularyItem, openPatient, viewIdDoc
 });
