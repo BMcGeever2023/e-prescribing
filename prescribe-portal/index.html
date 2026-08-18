@@ -276,13 +276,11 @@
 
       <!-- PATIENTS (pharmacy) -->
       <section class="view" id="view-patients" hidden>
-        <div class="section-head"><div><div class="desc">Everyone with a prescription on file in this portal.</div></div></div>
         <div class="patient-list" id="patient-list"></div>
       </section>
 
       <!-- FORMULARY (pharmacy only) -->
       <section class="view" id="view-formulary" hidden>
-        <div class="section-head"><div><div class="desc">The drug list prescribers choose from in New prescription. Anything outside this list is flagged as off-formulary for review. Only pharmacy accounts can edit it.</div></div></div>
         <div class="form-card" style="margin-bottom:18px; display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
           <div class="field" style="flex:1; min-width:220px; margin-bottom:0;"><label>Add an item</label><input type="text" id="formulary-new-item" placeholder="e.g. Prednisolone 5mg/5ml oral solution"></div>
           <button type="button" class="btn primary" id="formulary-add-btn">Add to formulary</button>
@@ -298,7 +296,6 @@
 
       <!-- PRESCRIBERS admin (pharmacy) -->
       <section class="view" id="view-prescribers" hidden>
-        <div class="section-head"><div><div class="desc">Registration must be independently verified before an account can issue prescriptions — mirrors GMC/NMC verification used by services like CloudRx and signatureRx.</div></div></div>
         <div class="verify-table" id="verify-table"></div>
       </section>
 

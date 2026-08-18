@@ -359,7 +359,7 @@ const NAV_ITEMS = {
     icon:'<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>' },
   patients:{ label:'Patients', title:'Patients', eyebrow:'Records',
     icon:'<circle cx="9" cy="8" r="3.4"/><path d="M2.5 20c0-3.5 3-6 6.5-6s6.5 2.5 6.5 6"/><circle cx="17.5" cy="8.5" r="2.6"/><path d="M15.7 14.2c2.8.3 5.3 2.4 5.3 5.8"/>' },
-  formulary:{ label:'Formulary', title:'Formulary', eyebrow:'Pharmacy-controlled',
+  formulary:{ label:'Target Formulary', title:'Target Formulary', eyebrow:'Pharmacy-controlled',
     icon:'<path d="M9 2h6l1.5 4.5H7.5L9 2Z"/><path d="M6 6.5h12l1.5 13a1.5 1.5 0 0 1-1.5 1.5H6a1.5 1.5 0 0 1-1.5-1.5l1.5-13Z"/><path d="M10 12h4M10 15h4"/>' },
   audit:{ label:'Audit trail', title:'Audit trail', eyebrow:'Compliance',
     icon:'<path d="M9 3h6l1 4H8l1-4Z"/><path d="M5 7h14v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7Z"/><path d="M9 12h6M9 16h6"/>' },
