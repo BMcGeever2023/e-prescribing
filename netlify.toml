@@ -7,7 +7,16 @@
 
 [build]
   publish = "prescribe-portal"
-  command = ""
+  # Write js/config.js at deploy time from environment variables set in the
+  # Netlify UI (Site configuration -> Environment variables):
+  #   SUPABASE_URL      = https://<project-ref>.supabase.co
+  #   SUPABASE_ANON_KEY = <anon/public key>   (public-safe; NEVER service_role)
+  # config.js is gitignored, so this is how the deployed site gets its config.
+  command = """
+  test -n "$SUPABASE_URL" && test -n "$SUPABASE_ANON_KEY" || { echo 'ERROR: set SUPABASE_URL and SUPABASE_ANON_KEY in Netlify environment variables'; exit 1; }
+  printf "window.PORTAL_CONFIG = {\\n  SUPABASE_URL: '%s',\\n  SUPABASE_ANON_KEY: '%s'\\n};\\n" "$SUPABASE_URL" "$SUPABASE_ANON_KEY" > prescribe-portal/js/config.js
+  echo "wrote prescribe-portal/js/config.js for $SUPABASE_URL"
+  """
 
 # Keep the whole site out of search indexes (belt-and-braces alongside
 # robots.txt and the <meta name="robots"> tag in index.html).

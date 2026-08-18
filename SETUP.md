@@ -124,33 +124,24 @@ Supabase Auth. *(If you later install Python or Node, `python -m http.server
 The app has its own login; Netlify adds a **second** shared password in front of
 the whole deployment.
 
-1. Push this repo to GitHub/GitLab (see below), then in Netlify: **Add new site
-   → Import an existing project**, pick the repo.
-2. Build settings: **Base directory** blank, **Publish directory**
-   `prescribe-portal`, **Build command** blank. (`netlify.toml` already sets
-   publish + no-index headers.)
-3. **Add the config at build time, not in git.** Because `js/config.js` is
-   gitignored, the deployed site won't have it. Easiest option: temporarily
-   commit a `config.js` with only the **anon** key for this private deploy, **or**
-   use a Netlify snippet/build step to write it. (Anon key is public-safe, but if
-   you commit it, do it knowingly.) See "Config on Netlify" below.
-4. **Turn on password protection** (needs Netlify **Pro**): **Site configuration
-   → Access & security → Visitor access / Password protection → Set site-wide
-   password.** Choose a strong password and share it only with your testers.
+1. In Netlify: **Add new site → Import an existing project**, pick the GitHub
+   repo (`e-prescribing`).
+2. Build settings: leave everything as detected — `netlify.toml` already sets
+   the publish directory, the no-index headers, and a build command that writes
+   `js/config.js` from environment variables at deploy time.
+3. **Set the environment variables** (before the first deploy, or redeploy
+   after): **Site configuration → Environment variables → Add a variable**:
+   - `SUPABASE_URL` = `https://YOUR-PROJECT-REF.supabase.co`
+   - `SUPABASE_ANON_KEY` = your **anon/public** key (never service_role)
+   The build fails with a clear error if either is missing.
+4. **Second password layer**: currently **skipped** (decided during setup —
+   the app's own login + MFA + RLS is the protection; the site is noindexed).
+   To add it later, either upgrade to Netlify **Pro** and use **Site
+   configuration → Access & security → Password protection**, or ask Claude to
+   add the free edge-function basic-auth layer.
 5. Set the Supabase **Site URL / Redirect URLs** (step 3) to the Netlify URL.
-6. Verify: visiting the site prompts for the **Netlify password first**, then the
-   **app login**. Check `https://YOUR-SITE/robots.txt` returns `Disallow: /`, and
-   that responses carry `X-Robots-Tag: noindex`.
-
-### Config on Netlify
-`js/config.js` holds the Supabase URL + anon key. Options, simplest first:
-- **Commit a deploy-only config**: create `prescribe-portal/js/config.js` with
-  the real URL + **anon** key and force-add it just for the deploy
-  (`git add -f prescribe-portal/js/config.js`). The anon key is public-safe and
-  the whole site is password-protected anyway.
-- **Or** keep it out of git and add a tiny build command in `netlify.toml` that
-  writes `config.js` from Netlify environment variables at deploy time. Ask me
-  and I'll wire this up.
+6. Verify: the site loads the app login; `https://YOUR-SITE/robots.txt` returns
+   `Disallow: /`; responses carry `X-Robots-Tag: noindex`.
 
 ## 8. Push to GitHub
 
