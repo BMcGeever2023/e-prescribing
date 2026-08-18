@@ -603,10 +603,10 @@ function openDrawer(id){
     <h4 style="font-size:12.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin:14px 0 6px;">Tracking</h4>
     <p style="font-size:13px; margin:0;">${esc(lastTracking.detail)} <span style="color:var(--muted);">— ${fmtDate(lastTracking.ts)}</span></p>` : '';
 
-  // Attachments: pharmacy (and the owning prescriber) can see them; pharmacy
-  // can add them while the script is in review or dispensed.
-  const canSeeAttach = u.role === 'pharmacy' || rx.prescriberId === u.id;
-  const canAttach = u.role === 'pharmacy' && (rx.status === 'in_review' || rx.status === 'exported');
+  // Attachments are internal pharmacy working documents: prescribers never
+  // see them (enforced by storage RLS too, not just here).
+  const canSeeAttach = u.role === 'pharmacy';
+  const canAttach = canSeeAttach && (rx.status === 'in_review' || rx.status === 'exported');
   const attachHtml = canSeeAttach ? `
     <h4 style="font-size:12.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin:14px 0 6px;">Attachments</h4>
     <div id="rx-attachments-list"><span style="color:var(--muted); font-size:12.5px;">Loading…</span></div>
