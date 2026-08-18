@@ -514,7 +514,8 @@ function renderIncoming(){
 }
 
 /* ================= PRESCRIPTIONS (pharmacy — full record store) ================= */
-function renderPrescriptionsModule(){
+// Shared by the on-screen list and the CSV export so they always agree.
+function filteredPrescriptions(){
   const q = (document.getElementById('prescriptions-search').value || '').trim().toLowerCase();
   let list = [...state.prescriptions];
   const from = document.getElementById('prescriptions-from').value;
@@ -529,11 +530,56 @@ function renderPrescriptionsModule(){
     );
   }
   list.sort((a,b)=> new Date(b.createdAt)-new Date(a.createdAt));
+  return list;
+}
+function renderPrescriptionsModule(){
+  const q = (document.getElementById('prescriptions-search').value || '').trim();
+  const list = filteredPrescriptions();
   document.getElementById('prescriptions-list').innerHTML = list.map(scriptCardHtml).join('') ||
     (q ? `<div class="empty"><div class="big">No matches</div>Try a different reference, patient, drug, or prescriber.</div>`
         : `<div class="empty"><div class="big">No prescriptions yet</div>Everything received or submitted will be stored here permanently.</div>`);
 }
 document.getElementById('prescriptions-search').addEventListener('input', renderPrescriptionsModule);
+
+/* ---- CSV export (one row per medication item) ---- */
+function csvField(v){ return '"' + String(v ?? '').replace(/"/g,'""') + '"'; }
+function exportPrescriptionsCsv(){
+  const list = filteredPrescriptions();
+  if(!list.length){ toast('Nothing to export for the current filters.'); return; }
+  const header = ['Ref','Created','Status','Type','Priority','Source','Patient','DOB','NHS number',
+    'GP practice / clinic','Allergies','Prescriber','Registration','Organisation','Item','Drug',
+    'Dose','Frequency','Quantity','Route','Unlicensed / special','Controlled drug','CD schedule',
+    'Off-formulary','Notes','Signature ID','Signed at'];
+  const rows = [header];
+  for(const r of list){
+    const p = state.patients.find(x=>x.id===r.patientId);
+    const reg = r.signature ? `${r.signature.regBody} ${r.signature.regNumber}` : '';
+    const base = [
+      r.ref, new Date(r.createdAt).toLocaleString('en-GB'), statusLabel(r.status), r.type,
+      r.urgent ? 'Urgent' : 'Routine', r.source, r.patientName, p?.dob || '', p?.nhs || '',
+      p?.gp || '', p?.allergies || '', r.prescriberName, reg, r.prescriberOrg || ''
+    ];
+    const items = r.items.length ? r.items : [{}];
+    items.forEach((i, idx)=>{
+      rows.push([...base, idx+1, i.drug || '', i.dose || '', i.frequency || '', i.quantity || '',
+        i.route || '', i.special ? 'Yes' : 'No', i.cd ? 'Yes' : 'No', i.cdSchedule || '',
+        i.customItem ? 'Yes' : 'No', r.notes || '', r.signature?.signatureId || '',
+        r.signature ? new Date(r.signature.signedAt).toLocaleString('en-GB') : '']);
+    });
+  }
+  // BOM so Excel opens it with correct encoding
+  const csv = '\uFEFF' + rows.map(row=>row.map(csvField).join(',')).join('\r\n');
+  const from = document.getElementById('prescriptions-from').value;
+  const to = document.getElementById('prescriptions-to').value;
+  const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'prescriptions' + (from ? '_from-'+from : '') + (to ? '_to-'+to : '') + '.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(a.href);
+  toast(`Exported ${list.length} prescription(s) as CSV.`);
+}
+document.getElementById('prescriptions-export-btn').addEventListener('click', exportPrescriptionsCsv);
 
 /* ---- date-range filters ---- */
 ['incoming-from','incoming-to'].forEach(id=> document.getElementById(id).addEventListener('change', renderIncoming));

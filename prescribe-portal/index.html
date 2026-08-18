@@ -183,9 +183,6 @@
 
       <!-- PRESCRIPTIONS (pharmacy — full record store) -->
       <section class="view" id="view-prescriptions" hidden>
-        <div class="section-head">
-          <div><div class="desc">Every prescription ever received or submitted — the permanent, searchable record.</div></div>
-        </div>
         <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-bottom:16px;">
           <div class="search-box" id="prescriptions-search-wrap" style="flex:1; min-width:260px; max-width:420px;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
@@ -194,6 +191,7 @@
           <div class="field" style="margin-bottom:0;"><label>From</label><input type="date" id="prescriptions-from"></div>
           <div class="field" style="margin-bottom:0;"><label>To</label><input type="date" id="prescriptions-to"></div>
           <button type="button" class="btn ghost" id="prescriptions-dates-clear">Clear dates</button>
+          <button type="button" class="btn primary" id="prescriptions-export-btn">Export CSV</button>
         </div>
         <div id="prescriptions-list"></div>
       </section>
