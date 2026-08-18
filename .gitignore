@@ -36,3 +36,6 @@ desktop.ini
 *.swp
 .vscode/
 .idea/
+
+# Any stray config.js copy anywhere in the tree (real one: prescribe-portal/js/config.js)
+config.js
