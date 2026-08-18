@@ -603,6 +603,17 @@ function openDrawer(id){
     <h4 style="font-size:12.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin:14px 0 6px;">Tracking</h4>
     <p style="font-size:13px; margin:0;">${esc(lastTracking.detail)} <span style="color:var(--muted);">— ${fmtDate(lastTracking.ts)}</span></p>` : '';
 
+  // Attachments: pharmacy (and the owning prescriber) can see them; pharmacy
+  // can add them while the script is in review or dispensed.
+  const canSeeAttach = u.role === 'pharmacy' || rx.prescriberId === u.id;
+  const canAttach = u.role === 'pharmacy' && (rx.status === 'in_review' || rx.status === 'exported');
+  const attachHtml = canSeeAttach ? `
+    <h4 style="font-size:12.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin:14px 0 6px;">Attachments</h4>
+    <div id="rx-attachments-list"><span style="color:var(--muted); font-size:12.5px;">Loading…</span></div>
+    ${canAttach ? `
+      <input type="file" id="attach-input" accept=".pdf,.jpg,.jpeg,.png" style="display:none">
+      <button class="btn ghost" style="margin-top:8px; padding:5px 10px; font-size:11.5px;" onclick="document.getElementById('attach-input').click()">+ Add attachment</button>` : ''}` : '';
+
   drawer.innerHTML = `
     <div class="drawer-head">
       <button class="close" onclick="closeDrawer()" aria-label="Close">&times;</button>
@@ -630,6 +641,7 @@ function openDrawer(id){
       ${itemsHtml}
       ${rx.notes ? `<h4 style="font-size:12.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin:14px 0 6px;">Notes</h4><p style="font-size:13px; margin:0;">${esc(rx.notes)}</p>` : ''}
       ${trackingHtml}
+      ${attachHtml}
       ${sigHtml}
       <div class="drawer-actions">${actions}</div>
       <h4 style="font-size:12.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin:20px 0 4px;">Audit trail</h4>
@@ -637,6 +649,38 @@ function openDrawer(id){
     </div>`;
   drawer.hidden = false;
   document.getElementById('overlay').hidden = false;
+  if(canAttach){
+    const inp = document.getElementById('attach-input');
+    inp.addEventListener('change', ()=>{ if(inp.files.length) uploadAttachment(rx.id, inp.files[0]); });
+  }
+  if(canSeeAttach) renderAttachments(rx.id);
+}
+
+/* ---- prescription attachments (private rx-attachments bucket) ---- */
+async function renderAttachments(rxId){
+  const box = document.getElementById('rx-attachments-list');
+  if(!box) return;
+  const { data, error } = await supabase.storage.from('rx-attachments').list(rxId, { sortBy:{ column:'name', order:'asc' } });
+  if(error){ box.innerHTML = `<span style="color:var(--muted); font-size:12.5px;">Couldn't load attachments (${esc(error.message)}).</span>`; return; }
+  if(!data || !data.length){ box.innerHTML = `<span style="color:var(--muted); font-size:12.5px;">No attachments.</span>`; return; }
+  // filenames are sanitised at upload to [a-zA-Z0-9._-], so safe inline
+  box.innerHTML = data.map(f=>`
+    <div style="margin:4px 0;"><a href="#" style="font-size:13px;" onclick="viewAttachment('${rxId}','${f.name}'); return false;">${esc(f.name.replace(/^\d+-/,''))}</a></div>`).join('');
+}
+async function uploadAttachment(rxId, file){
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const path = `${rxId}/${Date.now()}-${safeName}`;
+  const { error } = await supabase.storage.from('rx-attachments').upload(path, file, { contentType: file.type || undefined });
+  if(error){ toast('Upload failed: ' + error.message); return; }
+  const { error: logErr } = await supabase.rpc('log_rx_attachment', { p_rx_id: rxId, p_filename: safeName });
+  if(logErr){ toast(logErr.message); }
+  await refreshAndDrawer(rxId);
+  toast('Attachment added.');
+}
+async function viewAttachment(rxId, name){
+  const { data, error } = await supabase.storage.from('rx-attachments').createSignedUrl(`${rxId}/${name}`, 120);
+  if(error){ toast(error.message); return; }
+  window.open(data.signedUrl, '_blank', 'noopener');
 }
 function closeDrawer(){ document.getElementById('drawer').hidden = true; document.getElementById('overlay').hidden = true; }
 
@@ -1092,7 +1136,7 @@ Object.assign(window, {
   openDrawer, closeDrawer, goView, goIncoming, goMine, logout, backToLoginStep1,
   resetRxForm, confirmSign, closeSignModal, advanceStatus, exportToPMR, promptTracking, promptQuery,
   promptReject, promptRespond, verifyPrescriber, rejectPrescriber, editFormularyItem,
-  removeFormularyItem, openPatient, viewIdDoc
+  removeFormularyItem, openPatient, viewIdDoc, viewAttachment
 });
 
 /* ================= INIT ================= */
