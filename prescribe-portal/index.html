@@ -274,8 +274,26 @@
         </form>
       </section>
 
-      <!-- PATIENTS (pharmacy) -->
+      <!-- PATIENTS (pharmacy + prescriber) -->
       <section class="view" id="view-patients" hidden>
+        <div class="section-head">
+          <div></div>
+          <button type="button" class="btn primary" id="patient-add-btn">+ Add patient</button>
+        </div>
+        <form class="form-card" id="patient-form" style="display:none; margin-bottom:18px;">
+          <h2 style="font-size:14.5px; margin-top:0;" id="patient-form-title">Add patient</h2>
+          <div class="field-grid">
+            <div class="field"><label>Full name</label><input type="text" id="pat-name" placeholder="e.g. Alison Reid"></div>
+            <div class="field"><label>Date of birth</label><input type="date" id="pat-dob"></div>
+            <div class="field"><label>NHS number <span class="hint">(optional)</span></label><input type="text" id="pat-nhs" placeholder="000 000 0000"></div>
+            <div class="field"><label>GP practice / referring clinic</label><input type="text" id="pat-gp" placeholder="e.g. Riverside Medical Practice"></div>
+          </div>
+          <div class="field"><label>Known allergies</label><input type="text" id="pat-allergies" placeholder="e.g. Penicillin — leave blank if NKDA"></div>
+          <div style="display:flex; gap:10px;">
+            <button type="submit" class="btn primary">Save patient</button>
+            <button type="button" class="btn" id="patient-form-cancel">Cancel</button>
+          </div>
+        </form>
         <div class="patient-list" id="patient-list"></div>
       </section>
 

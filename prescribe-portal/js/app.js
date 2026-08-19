@@ -367,7 +367,7 @@ const NAV_ITEMS = {
     icon:'<circle cx="12" cy="8" r="4"/><path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7"/><path d="m16 5 1.6 1.6L21 3"/>' },
 };
 function navForRole(role){
-  if(role === 'prescriber') return ['dashboard','new','mine'];
+  if(role === 'prescriber') return ['dashboard','new','mine','patients'];
   return ['dashboard','incoming','prescriptions','upload','patients','formulary','audit','prescribers'];
 }
 function buildNav(){
@@ -1028,14 +1028,27 @@ document.getElementById('upload-form').addEventListener('submit', async e=>{
 
 /* ================= PATIENTS ================= */
 function initials(name){ return name.split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('').toUpperCase(); }
+// Pharmacy can manage any patient; prescribers must be verified first.
+function canManagePatients(){
+  const u = currentUser();
+  return !!u && (u.role === 'pharmacy' || u.verified);
+}
+let editingPatientId = null;
+
 function renderPatients(){
+  const manage = canManagePatients();
+  document.getElementById('patient-add-btn').style.display = manage ? '' : 'none';
   const list = document.getElementById('patient-list');
-  if(state.patients.length === 0){ list.innerHTML = `<div class="empty"><div class="big">No patients yet</div>They'll appear here once a prescription is submitted.</div>`; return; }
+  if(state.patients.length === 0){
+    list.innerHTML = `<div class="empty"><div class="big">No patients yet</div>${manage ? 'Add a patient above, or they\'ll appear here once a prescription is submitted.' : 'They\'ll appear here once a prescription is submitted.'}</div>`;
+    return;
+  }
   list.innerHTML = state.patients.map(p=>{
     const count = state.prescriptions.filter(r=>r.patientId===p.id).length;
     return `<div class="patient-row" onclick="openPatient('${p.id}')">
       <div class="patient-avatar">${initials(p.name)}</div>
       <div><div class="name">${esc(p.name)}</div><div class="sub">DOB ${esc(p.dob||'—')} · ${esc(p.gp||'No practice on file')}${p.allergies && p.allergies!=='NKDA' ? ' · Allergy: '+esc(p.allergies) : ''}</div></div>
+      ${manage ? `<button class="btn ghost" style="padding:5px 10px; font-size:11.5px; margin-right:10px;" onclick="event.stopPropagation(); editPatient('${p.id}')">Edit</button>` : ''}
       <div class="count-pill">${count} script${count===1?'':'s'}</div>
     </div>`;
   }).join('');
@@ -1044,6 +1057,48 @@ function openPatient(id){
   const rx = state.prescriptions.filter(r=>r.patientId===id).sort((a,b)=> new Date(b.createdAt)-new Date(a.createdAt))[0];
   if(rx) openDrawer(rx.id); else toast('No prescriptions on file for this patient yet.');
 }
+
+/* ---- add / edit patient form ---- */
+function showPatientForm(patient){
+  editingPatientId = patient ? patient.id : null;
+  document.getElementById('patient-form-title').textContent = patient ? 'Edit patient' : 'Add patient';
+  document.getElementById('pat-name').value = patient?.name || '';
+  document.getElementById('pat-dob').value = patient?.dob || '';
+  document.getElementById('pat-nhs').value = patient?.nhs || '';
+  document.getElementById('pat-gp').value = patient?.gp || '';
+  document.getElementById('pat-allergies').value = (patient && patient.allergies !== 'NKDA') ? (patient.allergies || '') : '';
+  document.getElementById('patient-form').style.display = 'block';
+  document.getElementById('pat-name').focus();
+}
+function hidePatientForm(){
+  editingPatientId = null;
+  document.getElementById('patient-form').style.display = 'none';
+  document.getElementById('patient-form').reset();
+}
+function editPatient(id){
+  const p = state.patients.find(x=>x.id===id);
+  if(p) showPatientForm(p);
+}
+document.getElementById('patient-add-btn').addEventListener('click', ()=> showPatientForm(null));
+document.getElementById('patient-form-cancel').addEventListener('click', hidePatientForm);
+document.getElementById('patient-form').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const name = document.getElementById('pat-name').value.trim();
+  if(!name){ toast('Enter the patient\'s name.'); return; }
+  const wasEditing = !!editingPatientId;
+  const { error } = await supabase.rpc('upsert_patient', {
+    p_id: editingPatientId,
+    p_name: name,
+    p_dob: document.getElementById('pat-dob').value || '',
+    p_nhs: document.getElementById('pat-nhs').value.trim(),
+    p_gp: document.getElementById('pat-gp').value.trim(),
+    p_allergies: document.getElementById('pat-allergies').value.trim()
+  });
+  if(error){ toast(error.message); return; }
+  hidePatientForm();
+  await refresh();
+  toast(wasEditing ? 'Patient details updated.' : 'Patient added.');
+});
 
 /* ================= FORMULARY (pharmacy only) ================= */
 function renderFormulary(){
@@ -1213,7 +1268,7 @@ Object.assign(window, {
   openDrawer, closeDrawer, goView, goIncoming, goMine, logout, backToLoginStep1,
   resetRxForm, confirmSign, closeSignModal, advanceStatus, exportToPMR, promptTracking, promptQuery,
   promptReject, promptRespond, verifyPrescriber, rejectPrescriber, editFormularyItem,
-  removeFormularyItem, openPatient, viewIdDoc, viewAttachment
+  removeFormularyItem, openPatient, editPatient, viewIdDoc, viewAttachment
 });
 
 /* ================= INIT ================= */
