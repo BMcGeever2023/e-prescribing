@@ -64,7 +64,7 @@ async function fetchState(){
 
   const [rx, pat, form, pre, log] = await Promise.all([
     supabase.from('prescriptions').select(RX_SELECT),
-    supabase.from('patients').select('id,name,dob,address,gp,gp_address,allergies'),
+    supabase.from('patients').select('id,name,dob,age,address,gp,gp_address,allergies'),
     supabase.from('formulary').select('id,name,added_by,added_at'),
     supabase.from('prescribers').select(PRESCRIBER_COLS),
     role === 'pharmacy'
@@ -81,7 +81,7 @@ async function fetchState(){
   state = {
     session: { userId:user.id, role },
     prescriptions: (rx.data || []).map(mapRx),
-    patients: (pat.data || []).map(p=>({ id:p.id, name:p.name, dob:p.dob, address:p.address, gp:p.gp, gpAddress:p.gp_address, allergies:p.allergies })),
+    patients: (pat.data || []).map(p=>({ id:p.id, name:p.name, dob:p.dob, age:p.age, address:p.address, gp:p.gp, gpAddress:p.gp_address, allergies:p.allergies })),
     formulary: (form.data || []).map(f=>({ id:f.id, name:f.name, addedBy:f.added_by, addedAt:f.added_at })),
     prescribers: (pre.data || []).map(mapPrescriber),
     staff: staffRows.map(s=>({ id:s.id, role:'pharmacy', name:s.name, title:s.title, email:s.email })),
@@ -98,6 +98,25 @@ function timeAgo(iso){ const mins = Math.round((Date.now() - new Date(iso).getTi
 // NB: the internal status key is still `exported` (DB check constraint);
 // only the user-facing wording is "Dispensed".
 function statusLabel(s){ return { received:'Received', in_review:'In review', query:'Query raised', exported:'Dispensed', rejected:'Rejected' }[s] || s; }
+function ageFromDob(dob){
+  if(!dob) return null;
+  const d = new Date(dob);
+  if(isNaN(d.getTime())) return null;
+  const t = new Date();
+  let a = t.getFullYear() - d.getFullYear();
+  const m = t.getMonth() - d.getMonth();
+  if(m < 0 || (m === 0 && t.getDate() < d.getDate())) a--;
+  return a;
+}
+// Age is a legal labelling requirement for children's prescriptions:
+// if the DOB shows under-12 and no age was entered, block submission.
+function ageRuleError(dobVal, ageVal){
+  const derived = ageFromDob(dobVal);
+  if(derived !== null && derived < 12 && ageVal === '') {
+    return 'Age is mandatory for patients under 12 years old.';
+  }
+  return null;
+}
 function toast(msg){ const c = document.getElementById('toast-container'); const el = document.createElement('div'); el.className = 'toast'; el.textContent = msg; c.appendChild(el); setTimeout(()=> el.remove(), 3400); }
 
 function currentUser(){
@@ -545,7 +564,7 @@ function csvField(v){ return '"' + String(v ?? '').replace(/"/g,'""') + '"'; }
 function exportPrescriptionsCsv(){
   const list = filteredPrescriptions();
   if(!list.length){ toast('Nothing to export for the current filters.'); return; }
-  const header = ['Ref','Created','Status','Type','Priority','Source','Patient','DOB','Patient address',
+  const header = ['Ref','Created','Status','Type','Priority','Source','Patient','DOB','Age','Patient address',
     'GP practice / clinic','GP address','Allergies','Prescriber','Registration','Organisation','Item','Drug',
     'Dose','Frequency','Quantity','Route','Unlicensed / special','Controlled drug','CD schedule',
     'Off-formulary','Notes','Signature ID','Signed at'];
@@ -555,7 +574,7 @@ function exportPrescriptionsCsv(){
     const reg = r.signature ? `${r.signature.regBody} ${r.signature.regNumber}` : '';
     const base = [
       r.ref, new Date(r.createdAt).toLocaleString('en-GB'), statusLabel(r.status), r.type,
-      r.urgent ? 'Urgent' : 'Routine', r.source, r.patientName, p?.dob || '', p?.address || '',
+      r.urgent ? 'Urgent' : 'Routine', r.source, r.patientName, p?.dob || '', p?.age ?? '', p?.address || '',
       p?.gp || '', p?.gpAddress || '', p?.allergies || '', r.prescriberName, reg, r.prescriberOrg || ''
     ];
     const items = r.items.length ? r.items : [{}];
@@ -710,6 +729,7 @@ function openDrawer(id){
         <dt>Address</dt><dd>${regInfo && regInfo.address ? esc(regInfo.address) : '—'}</dd>
         <dt>Source</dt><dd>${esc(rx.source)}</dd>
         <dt>DOB</dt><dd>${patient ? esc(patient.dob) : '—'}</dd>
+        <dt>Age</dt><dd>${patient && patient.age != null ? esc(patient.age) : '—'}</dd>
         <dt>Allergies</dt><dd>${patient ? esc(patient.allergies||'NKDA') : '—'}</dd>
         <dt>Patient address</dt><dd>${patient && patient.address ? esc(patient.address) : '—'}</dd>
       </dl>
@@ -873,9 +893,13 @@ document.getElementById('rx-form').addEventListener('submit', e=>{
   if(isNewPatient){
     const name = document.getElementById('np-name').value.trim();
     if(!name){ toast('Enter the new patient\'s name.'); return; }
+    const npDob = document.getElementById('np-dob').value || '';
+    const npAge = document.getElementById('np-age').value.trim();
+    const npAgeErr = ageRuleError(npDob, npAge);
+    if(npAgeErr){ toast(npAgeErr); return; }
     patientId = null;
     patientName = name;
-    newPatientRecord = { name, dob: document.getElementById('np-dob').value || '', address: document.getElementById('np-address').value.trim(), gp: document.getElementById('np-gp').value.trim(), gpAddress: document.getElementById('np-gp-address').value.trim(), allergies: document.getElementById('np-allergies').value.trim() || 'NKDA' };
+    newPatientRecord = { name, dob: npDob, age: npAge, address: document.getElementById('np-address').value.trim(), gp: document.getElementById('np-gp').value.trim(), gpAddress: document.getElementById('np-gp-address').value.trim(), allergies: document.getElementById('np-allergies').value.trim() || 'NKDA' };
   } else {
     patientId = document.getElementById('rx-patient').value;
     if(!patientId){ toast('Select or add a patient first.'); return; }
@@ -1052,6 +1076,7 @@ function showPatientForm(patient){
   document.getElementById('patient-form-title').textContent = patient ? 'Edit patient' : 'Add patient';
   document.getElementById('pat-name').value = patient?.name || '';
   document.getElementById('pat-dob').value = patient?.dob || '';
+  document.getElementById('pat-age').value = patient?.age ?? '';
   document.getElementById('pat-address').value = patient?.address || '';
   document.getElementById('pat-gp').value = patient?.gp || '';
   document.getElementById('pat-gp-address').value = patient?.gpAddress || '';
@@ -1070,15 +1095,29 @@ function editPatient(id){
 }
 document.getElementById('patient-add-btn').addEventListener('click', ()=> showPatientForm(null));
 document.getElementById('patient-form-cancel').addEventListener('click', hidePatientForm);
+// Convenience: entering a DOB fills in the age automatically (still editable).
+document.getElementById('pat-dob').addEventListener('change', ()=>{
+  const a = ageFromDob(document.getElementById('pat-dob').value);
+  if(a !== null && document.getElementById('pat-age').value === '') document.getElementById('pat-age').value = a;
+});
+document.getElementById('np-dob').addEventListener('change', ()=>{
+  const a = ageFromDob(document.getElementById('np-dob').value);
+  if(a !== null && document.getElementById('np-age').value === '') document.getElementById('np-age').value = a;
+});
 document.getElementById('patient-form').addEventListener('submit', async e=>{
   e.preventDefault();
   const name = document.getElementById('pat-name').value.trim();
   if(!name){ toast('Enter the patient\'s name.'); return; }
+  const dobVal = document.getElementById('pat-dob').value || '';
+  const ageVal = document.getElementById('pat-age').value.trim();
+  const ageErr = ageRuleError(dobVal, ageVal);
+  if(ageErr){ toast(ageErr); return; }
   const wasEditing = !!editingPatientId;
   const { error } = await supabase.rpc('upsert_patient', {
     p_id: editingPatientId,
     p_name: name,
-    p_dob: document.getElementById('pat-dob').value || '',
+    p_dob: dobVal,
+    p_age: ageVal === '' ? null : parseInt(ageVal, 10),
     p_address: document.getElementById('pat-address').value.trim(),
     p_gp: document.getElementById('pat-gp').value.trim(),
     p_gp_address: document.getElementById('pat-gp-address').value.trim(),

@@ -213,7 +213,10 @@
               <div class="field"><label>Full name</label><input type="text" id="np-name"></div>
               <div class="field"><label>Date of birth</label><input type="date" id="np-dob"></div>
             </div>
-            <div class="field"><label>Patient address</label><input type="text" id="np-address"></div>
+            <div class="field-grid">
+              <div class="field"><label>Age <span class="hint">*Mandatory for under 12 years old</span></label><input type="number" id="np-age" min="0" max="130"></div>
+              <div class="field"><label>Patient address</label><input type="text" id="np-address"></div>
+            </div>
             <div class="field-grid">
               <div class="field"><label>GP practice / referring clinic</label><input type="text" id="np-gp"></div>
               <div class="field"><label>GP practice address</label><input type="text" id="np-gp-address"></div>
@@ -289,7 +292,10 @@
             <div class="field"><label>Full name</label><input type="text" id="pat-name"></div>
             <div class="field"><label>Date of birth</label><input type="date" id="pat-dob"></div>
           </div>
-          <div class="field"><label>Patient address</label><input type="text" id="pat-address"></div>
+          <div class="field-grid">
+            <div class="field"><label>Age <span class="hint">*Mandatory for under 12 years old</span></label><input type="number" id="pat-age" min="0" max="130"></div>
+            <div class="field"><label>Patient address</label><input type="text" id="pat-address"></div>
+          </div>
           <div class="field-grid">
             <div class="field"><label>GP practice / referring clinic</label><input type="text" id="pat-gp"></div>
             <div class="field"><label>GP practice address</label><input type="text" id="pat-gp-address"></div>
