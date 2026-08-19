@@ -21,7 +21,6 @@ let mfaFactorId = null;          // verified TOTP factor being challenged at log
 let enrolFactorId = null;        // TOTP factor being enrolled (first login)
 
 const ROUTES = ['Oral','Topical','Subcutaneous','Intramuscular','Rectal','Ophthalmic','Other'];
-const CD_SCHEDULES = ['CD2 (Schedule 2)','CD3 (Schedule 3)','CD4 (Schedule 4)','CD5 (Schedule 5)'];
 
 /* ================= DATA LOADING (Supabase -> state) ================= */
 const PRESCRIBER_COLS =
@@ -828,18 +827,8 @@ function addMedRow(){
       <div class="field"><label>Frequency</label><input type="text" class="m-freq"></div>
       <div class="field"><label>Quantity</label><input type="text" class="m-qty"></div>
     </div>
-    <div class="drug-line-3">
-      <div class="field"><label>Route</label><select class="m-route">${ROUTES.map(r=>`<option>${r}</option>`).join('')}</select></div>
-      <div class="field"><label>&nbsp;</label><label class="checkline"><input type="checkbox" class="m-special"> Unlicensed / special</label></div>
-      <div class="field"><label>&nbsp;</label><label class="checkline"><input type="checkbox" class="m-cd"> Controlled drug</label></div>
-    </div>
-    <div class="field m-cd-wrap" style="display:none;">
-      <label>CD schedule</label>
-      <select class="m-cd-schedule">${CD_SCHEDULES.map(s=>`<option>${s}</option>`).join('')}</select>
-      <div class="cd-banner show">This item will require your PIN and a signed audit entry as a controlled drug on submission.</div>
-    </div>`;
+    <div class="field"><label>Route</label><select class="m-route">${ROUTES.map(r=>`<option>${r}</option>`).join('')}</select></div>`;
   document.getElementById('med-rows').appendChild(wrap);
-  wrap.querySelector('.m-cd').addEventListener('change', e=>{ wrap.querySelector('.m-cd-wrap').style.display = e.target.checked ? 'block' : 'none'; });
   wrap.querySelector('.m-drug-select').addEventListener('change', e=>{
     const custom = wrap.querySelector('.m-drug-custom');
     if(e.target.value === '__custom__'){ custom.style.display = 'block'; custom.focus(); }
@@ -903,8 +892,7 @@ document.getElementById('rx-form').addEventListener('submit', e=>{
       drug: drugName, customItem: isCustom,
       dose: r.querySelector('.m-dose').value.trim(), frequency: r.querySelector('.m-freq').value.trim(),
       quantity: r.querySelector('.m-qty').value.trim(), route: r.querySelector('.m-route').value,
-      special: r.querySelector('.m-special').checked, cd: r.querySelector('.m-cd').checked,
-      cdSchedule: r.querySelector('.m-cd').checked ? r.querySelector('.m-cd-schedule').value : ''
+      special: false, cd: false, cdSchedule: ''
     };
   }).filter(i=>i.drug);
   if(items.length === 0){ toast('Select or enter at least one drug.'); return; }
