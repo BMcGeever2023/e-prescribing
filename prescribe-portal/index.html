@@ -35,8 +35,8 @@
 
       <!-- step 1: credentials -->
       <div id="login-step-1">
-        <div class="field"><label>Email</label><input type="email" id="login-email" placeholder="you@target-healthcare.co.uk" autocomplete="username"></div>
-        <div class="field"><label>Password</label><input type="password" id="login-password" placeholder="Your password" autocomplete="current-password"></div>
+        <div class="field"><label>Email</label><input type="email" id="login-email" autocomplete="username"></div>
+        <div class="field"><label>Password</label><input type="password" id="login-password" autocomplete="current-password"></div>
         <button type="button" class="btn primary block" id="login-continue-btn">Continue</button>
         <div style="text-align:center; margin-top:10px;"><a href="#" id="forgot-link" style="font-size:12.5px; color:var(--muted);">Forgot password?</a></div>
       </div>
@@ -44,7 +44,7 @@
       <!-- step: request a password-reset email -->
       <div id="login-step-reset" style="display:none;">
         <div class="auth-note">Enter your account email and we'll send you a password-reset link. Open it on this device.</div>
-        <div class="field"><label>Email</label><input type="email" id="reset-email" placeholder="you@target-healthcare.co.uk" autocomplete="username"></div>
+        <div class="field"><label>Email</label><input type="email" id="reset-email" autocomplete="username"></div>
         <button type="button" class="btn primary block" id="reset-send-btn">Send reset link</button>
         <button type="button" class="btn ghost block" style="margin-top:8px;" onclick="backToLoginStep1()">Back</button>
       </div>
@@ -52,15 +52,15 @@
       <!-- step: set a new password (arrived via the reset email link) -->
       <div id="login-step-newpw" style="display:none;">
         <div class="auth-note">Choose a new password for your account. You'll then log in again with it (and your usual authenticator code).</div>
-        <div class="field"><label>New password</label><input type="password" id="newpw-input" autocomplete="new-password" placeholder="At least 8 characters"></div>
-        <div class="field"><label>Confirm new password</label><input type="password" id="newpw-confirm" autocomplete="new-password" placeholder="Repeat password"></div>
+        <div class="field"><label>New password <span class="hint">(at least 8 characters)</span></label><input type="password" id="newpw-input" autocomplete="new-password"></div>
+        <div class="field"><label>Confirm new password</label><input type="password" id="newpw-confirm" autocomplete="new-password"></div>
         <button type="button" class="btn primary block" id="newpw-save-btn">Save new password</button>
       </div>
 
       <!-- step 2: verify an existing authenticator (TOTP) factor -->
       <div id="login-step-mfa" style="display:none;">
         <div class="auth-note">Open your authenticator app and enter the current 6-digit code for Target Pharmacy Prescribe.</div>
-        <div class="field"><label>6-digit code</label><input type="text" id="login-mfa-input" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="000000"></div>
+        <div class="field"><label>6-digit code</label><input type="text" id="login-mfa-input" maxlength="6" inputmode="numeric" autocomplete="one-time-code"></div>
         <button type="button" class="btn primary block" id="login-verify-btn">Verify &amp; sign in</button>
         <button type="button" class="btn ghost block" style="margin-top:8px;" onclick="backToLoginStep1()">Back</button>
       </div>
@@ -70,7 +70,7 @@
         <div class="auth-note">Set up two-factor authentication. Scan this QR code with an authenticator app (Google Authenticator, Authy, 1Password…), then enter the 6-digit code it shows.</div>
         <div id="enrol-qr" style="text-align:center; margin:10px 0;"></div>
         <div class="field"><label>Or enter this setup key manually</label><input type="text" id="enrol-secret" readonly></div>
-        <div class="field"><label>6-digit code</label><input type="text" id="enrol-code-input" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="000000"></div>
+        <div class="field"><label>6-digit code</label><input type="text" id="enrol-code-input" maxlength="6" inputmode="numeric" autocomplete="one-time-code"></div>
         <button type="button" class="btn primary block" id="enrol-verify-btn">Confirm &amp; finish</button>
         <button type="button" class="btn ghost block" style="margin-top:8px;" onclick="backToLoginStep1()">Cancel</button>
       </div>
@@ -210,15 +210,15 @@
           </div>
           <div id="new-patient-fields" style="display:none">
             <div class="field-grid">
-              <div class="field"><label>Full name</label><input type="text" id="np-name" placeholder="e.g. Alison Reid"></div>
+              <div class="field"><label>Full name</label><input type="text" id="np-name"></div>
               <div class="field"><label>Date of birth</label><input type="date" id="np-dob"></div>
             </div>
-            <div class="field"><label>Patient address</label><input type="text" id="np-address" placeholder="e.g. 14 Orchard Way, Glasgow, G12 8QQ"></div>
+            <div class="field"><label>Patient address</label><input type="text" id="np-address"></div>
             <div class="field-grid">
-              <div class="field"><label>GP practice / referring clinic</label><input type="text" id="np-gp" placeholder="e.g. Riverside Medical Practice"></div>
-              <div class="field"><label>GP practice address</label><input type="text" id="np-gp-address" placeholder="e.g. 22 Bridge Street, Glasgow, G1 4RT"></div>
+              <div class="field"><label>GP practice / referring clinic</label><input type="text" id="np-gp"></div>
+              <div class="field"><label>GP practice address</label><input type="text" id="np-gp-address"></div>
             </div>
-            <div class="field"><label>Known allergies</label><input type="text" id="np-allergies" placeholder="e.g. Penicillin — leave blank if NKDA"></div>
+            <div class="field"><label>Known allergies <span class="hint">(leave blank if NKDA)</span></label><input type="text" id="np-allergies"></div>
           </div>
 
           <hr class="divider">
@@ -286,15 +286,15 @@
         <form class="form-card" id="patient-form" style="display:none; margin-bottom:18px;">
           <h2 style="font-size:14.5px; margin-top:0;" id="patient-form-title">Add patient</h2>
           <div class="field-grid">
-            <div class="field"><label>Full name</label><input type="text" id="pat-name" placeholder="e.g. Alison Reid"></div>
+            <div class="field"><label>Full name</label><input type="text" id="pat-name"></div>
             <div class="field"><label>Date of birth</label><input type="date" id="pat-dob"></div>
           </div>
-          <div class="field"><label>Patient address</label><input type="text" id="pat-address" placeholder="e.g. 14 Orchard Way, Glasgow, G12 8QQ"></div>
+          <div class="field"><label>Patient address</label><input type="text" id="pat-address"></div>
           <div class="field-grid">
-            <div class="field"><label>GP practice / referring clinic</label><input type="text" id="pat-gp" placeholder="e.g. Riverside Medical Practice"></div>
-            <div class="field"><label>GP practice address</label><input type="text" id="pat-gp-address" placeholder="e.g. 22 Bridge Street, Glasgow, G1 4RT"></div>
+            <div class="field"><label>GP practice / referring clinic</label><input type="text" id="pat-gp"></div>
+            <div class="field"><label>GP practice address</label><input type="text" id="pat-gp-address"></div>
           </div>
-          <div class="field"><label>Known allergies</label><input type="text" id="pat-allergies" placeholder="e.g. Penicillin — leave blank if NKDA"></div>
+          <div class="field"><label>Known allergies <span class="hint">(leave blank if NKDA)</span></label><input type="text" id="pat-allergies"></div>
           <div style="display:flex; gap:10px;">
             <button type="submit" class="btn primary">Save patient</button>
             <button type="button" class="btn" id="patient-form-cancel">Cancel</button>
