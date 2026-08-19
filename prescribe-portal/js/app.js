@@ -824,9 +824,9 @@ function addMedRow(){
       <div class="hint" style="margin-top:4px;">Formulary is set by the pharmacy team. Items not listed are flagged for review before dispensing.</div>
     </div>
     <div class="drug-line-3-even">
-      <div class="field"><label>Dose</label><input type="text" class="m-dose" placeholder="e.g. 5ml"></div>
-      <div class="field"><label>Frequency</label><input type="text" class="m-freq" placeholder="e.g. Twice daily"></div>
-      <div class="field"><label>Quantity</label><input type="text" class="m-qty" placeholder="e.g. 150ml"></div>
+      <div class="field"><label>Dose</label><input type="text" class="m-dose"></div>
+      <div class="field"><label>Frequency</label><input type="text" class="m-freq"></div>
+      <div class="field"><label>Quantity</label><input type="text" class="m-qty"></div>
     </div>
     <div class="drug-line-3">
       <div class="field"><label>Route</label><select class="m-route">${ROUTES.map(r=>`<option>${r}</option>`).join('')}</select></div>

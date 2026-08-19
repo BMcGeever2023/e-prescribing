@@ -82,7 +82,7 @@
       <div class="auth-error" id="register-error"></div>
       <div class="auth-success" id="register-success"></div>
 
-      <div class="field"><label>Full name</label><input type="text" id="reg-name" placeholder="e.g. Dr. A. Sharma"></div>
+      <div class="field"><label>Full name</label><input type="text" id="reg-name"></div>
       <div class="field-row2">
         <div class="field"><label>Prescriber type</label>
           <select id="reg-proftype">
@@ -99,20 +99,20 @@
         </div>
       </div>
       <div class="field-row2">
-        <div class="field"><label>Registration number</label><input type="text" id="reg-regnumber" placeholder="e.g. 7123456"></div>
-        <div class="field"><label>Organisation</label><input type="text" id="reg-org" placeholder="e.g. Ashgrove Medical Practice"></div>
+        <div class="field"><label>Registration number</label><input type="text" id="reg-regnumber"></div>
+        <div class="field"><label>Organisation</label><input type="text" id="reg-org"></div>
       </div>
       <div class="field">
         <label>Practice address <span class="hint">(printed on every prescription you sign)</span></label>
-        <input type="text" id="reg-address" placeholder="e.g. 12 High Street, Glasgow, G2 3AB">
+        <input type="text" id="reg-address">
       </div>
       <div class="field-row2">
-        <div class="field"><label>Email</label><input type="email" id="reg-email" placeholder="you@practice.co.uk"></div>
-        <div class="field"><label>Password</label><input type="password" id="reg-password" placeholder="Choose a password"></div>
+        <div class="field"><label>Email</label><input type="email" id="reg-email"></div>
+        <div class="field"><label>Password</label><input type="password" id="reg-password"></div>
       </div>
       <div class="field-row2">
-        <div class="field"><label>Signing PIN <span class="hint">(4 digits)</span></label><input type="text" id="reg-pin" maxlength="4" placeholder="e.g. 1357"></div>
-        <div class="field"><label>Confirm PIN</label><input type="text" id="reg-pin2" maxlength="4" placeholder="Repeat PIN"></div>
+        <div class="field"><label>Signing PIN <span class="hint">(4 digits)</span></label><input type="text" id="reg-pin" maxlength="4"></div>
+        <div class="field"><label>Confirm PIN</label><input type="text" id="reg-pin2" maxlength="4"></div>
       </div>
       <div class="field">
         <label>Proof of identity <span class="hint">(passport or driving licence)</span></label>
@@ -232,7 +232,7 @@
           <div id="med-rows"></div>
 
           <hr class="divider">
-          <div class="field"><label>Notes for the pharmacy <span class="hint">(optional)</span></label><textarea id="rx-notes" placeholder="e.g. Please confirm supply availability before dispensing."></textarea></div>
+          <div class="field"><label>Notes for the pharmacy <span class="hint">(optional)</span></label><textarea id="rx-notes"></textarea></div>
 
           <div style="display:flex; gap:10px; margin-top:6px;">
             <button type="submit" class="btn primary">Continue to sign</button>
@@ -271,8 +271,8 @@
             <div class="field"><label>Prescriber name</label><input type="text" id="up-prescriber" required></div>
             <div class="field"><label>Prescriber organisation</label><input type="text" id="up-org"></div>
           </div>
-          <div class="field"><label>Medication</label><input type="text" id="up-drug" placeholder="e.g. Melatonin 1mg/ml oral solution (unlicensed) — 5ml at night, 150ml"></div>
-          <div class="field"><label>Notes</label><textarea id="up-notes" placeholder="Anything unclear on the original document"></textarea></div>
+          <div class="field"><label>Medication</label><input type="text" id="up-drug"></div>
+          <div class="field"><label>Notes</label><textarea id="up-notes"></textarea></div>
           <button type="submit" class="btn primary">Add to incoming queue</button>
         </form>
       </section>
@@ -306,7 +306,7 @@
       <!-- FORMULARY (pharmacy only) -->
       <section class="view" id="view-formulary" hidden>
         <div class="form-card" style="margin-bottom:18px; display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
-          <div class="field" style="flex:1; min-width:220px; margin-bottom:0;"><label>Add an item</label><input type="text" id="formulary-new-item" placeholder="e.g. Prednisolone 5mg/5ml oral solution"></div>
+          <div class="field" style="flex:1; min-width:220px; margin-bottom:0;"><label>Add an item</label><input type="text" id="formulary-new-item"></div>
           <button type="button" class="btn primary" id="formulary-add-btn">Add to formulary</button>
         </div>
         <div class="formulary-list" id="formulary-list"></div>
