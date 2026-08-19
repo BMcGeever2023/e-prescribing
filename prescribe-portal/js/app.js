@@ -385,7 +385,7 @@ function buildNav(){
     b.addEventListener('click', ()=> goView(b.dataset.view));
   });
   document.getElementById('sidebar-foot').textContent = u.role === 'prescriber'
-    ? 'Prescriptions you sign use your registered ' + u.regBody + ' number and PIN — every submission is logged.'
+    ? 'Prescriptions you sign use your registration number and PIN — every submission is logged.'
     : 'Every entry is timestamped and logged for GPhC-aligned recordkeeping.';
   document.getElementById('search-wrap').style.display = u.role === 'pharmacy' ? 'flex' : 'none';
 }
@@ -463,7 +463,7 @@ function renderDashboard(){
     gridEl.innerHTML = `
       <div class="stat-card" onclick="goMine('today')"><div class="label">Submitted today <span class="date-tag">${todayShort}</span></div><div class="value">${submittedToday}</div><div class="foot">By you</div></div>
       <div class="stat-card" onclick="goMine('awaiting')"><div class="label">Awaiting pharmacy review</div><div class="value">${awaiting}</div><div class="foot">Received or in review</div></div>
-      <div class="stat-card" onclick="goMine('query')"><div class="label">Queries needing you</div><div class="value ${queries?'alert':''}">${queries}</div><div class="foot">Reply from My prescriptions</div></div>
+      <div class="stat-card" onclick="goMine('query')"><div class="label">Queries Awaiting Response</div><div class="value ${queries?'alert':''}">${queries}</div><div class="foot">Reply from My prescriptions</div></div>
       <div class="stat-card" onclick="goMine('exported')"><div class="label">Dispensed</div><div class="value">${exported}</div><div class="foot">All time</div></div>`;
     document.getElementById('feed-heading').textContent = 'Your recent submissions';
     document.getElementById('feed-desc').textContent = 'The latest scripts you\'ve signed and sent.';
