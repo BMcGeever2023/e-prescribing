@@ -34,7 +34,8 @@ Supabase and Netlify accounts. Work top to bottom.
    5. `supabase/migrations/0005_dispense_tracking.sql`  ← "Dispensed" wording + tracking-details RPC
    6. `supabase/migrations/0006_rx_attachments.sql`  ← private bucket for prescription attachments
    7. `supabase/migrations/0007_patients.sql`  ← patient add/edit + prescriber Patients page
-   8. `supabase/seed.sql`
+   8. `supabase/migrations/0008_patient_fields.sql`  ← retire NHS number; patient + GP addresses
+   9. `supabase/seed.sql`
 3. Each should report success. After this you have all tables, RLS policies,
    RPCs, the private `prescriber-ids` storage bucket, the formulary, and a few
    test patients.

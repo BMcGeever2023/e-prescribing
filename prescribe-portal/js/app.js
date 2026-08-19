@@ -65,7 +65,7 @@ async function fetchState(){
 
   const [rx, pat, form, pre, log] = await Promise.all([
     supabase.from('prescriptions').select(RX_SELECT),
-    supabase.from('patients').select('id,name,dob,nhs,gp,allergies'),
+    supabase.from('patients').select('id,name,dob,address,gp,gp_address,allergies'),
     supabase.from('formulary').select('id,name,added_by,added_at'),
     supabase.from('prescribers').select(PRESCRIBER_COLS),
     role === 'pharmacy'
@@ -82,7 +82,7 @@ async function fetchState(){
   state = {
     session: { userId:user.id, role },
     prescriptions: (rx.data || []).map(mapRx),
-    patients: (pat.data || []).map(p=>({ id:p.id, name:p.name, dob:p.dob, nhs:p.nhs, gp:p.gp, allergies:p.allergies })),
+    patients: (pat.data || []).map(p=>({ id:p.id, name:p.name, dob:p.dob, address:p.address, gp:p.gp, gpAddress:p.gp_address, allergies:p.allergies })),
     formulary: (form.data || []).map(f=>({ id:f.id, name:f.name, addedBy:f.added_by, addedAt:f.added_at })),
     prescribers: (pre.data || []).map(mapPrescriber),
     staff: staffRows.map(s=>({ id:s.id, role:'pharmacy', name:s.name, title:s.title, email:s.email })),
@@ -546,8 +546,8 @@ function csvField(v){ return '"' + String(v ?? '').replace(/"/g,'""') + '"'; }
 function exportPrescriptionsCsv(){
   const list = filteredPrescriptions();
   if(!list.length){ toast('Nothing to export for the current filters.'); return; }
-  const header = ['Ref','Created','Status','Type','Priority','Source','Patient','DOB','NHS number',
-    'GP practice / clinic','Allergies','Prescriber','Registration','Organisation','Item','Drug',
+  const header = ['Ref','Created','Status','Type','Priority','Source','Patient','DOB','Patient address',
+    'GP practice / clinic','GP address','Allergies','Prescriber','Registration','Organisation','Item','Drug',
     'Dose','Frequency','Quantity','Route','Unlicensed / special','Controlled drug','CD schedule',
     'Off-formulary','Notes','Signature ID','Signed at'];
   const rows = [header];
@@ -556,8 +556,8 @@ function exportPrescriptionsCsv(){
     const reg = r.signature ? `${r.signature.regBody} ${r.signature.regNumber}` : '';
     const base = [
       r.ref, new Date(r.createdAt).toLocaleString('en-GB'), statusLabel(r.status), r.type,
-      r.urgent ? 'Urgent' : 'Routine', r.source, r.patientName, p?.dob || '', p?.nhs || '',
-      p?.gp || '', p?.allergies || '', r.prescriberName, reg, r.prescriberOrg || ''
+      r.urgent ? 'Urgent' : 'Routine', r.source, r.patientName, p?.dob || '', p?.address || '',
+      p?.gp || '', p?.gpAddress || '', p?.allergies || '', r.prescriberName, reg, r.prescriberOrg || ''
     ];
     const items = r.items.length ? r.items : [{}];
     items.forEach((i, idx)=>{
@@ -712,7 +712,7 @@ function openDrawer(id){
         <dt>Source</dt><dd>${esc(rx.source)}</dd>
         <dt>DOB</dt><dd>${patient ? esc(patient.dob) : '—'}</dd>
         <dt>Allergies</dt><dd>${patient ? esc(patient.allergies||'NKDA') : '—'}</dd>
-        <dt>NHS number</dt><dd>${patient && patient.nhs ? esc(patient.nhs) : '—'}</dd>
+        <dt>Patient address</dt><dd>${patient && patient.address ? esc(patient.address) : '—'}</dd>
       </dl>
       <h4 style="font-size:12.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin-bottom:8px;">Medication</h4>
       ${itemsHtml}
@@ -886,7 +886,7 @@ document.getElementById('rx-form').addEventListener('submit', e=>{
     if(!name){ toast('Enter the new patient\'s name.'); return; }
     patientId = null;
     patientName = name;
-    newPatientRecord = { name, dob: document.getElementById('np-dob').value || '', nhs: document.getElementById('np-nhs').value.trim(), gp: document.getElementById('np-gp').value.trim(), allergies: document.getElementById('np-allergies').value.trim() || 'NKDA' };
+    newPatientRecord = { name, dob: document.getElementById('np-dob').value || '', address: document.getElementById('np-address').value.trim(), gp: document.getElementById('np-gp').value.trim(), gpAddress: document.getElementById('np-gp-address').value.trim(), allergies: document.getElementById('np-allergies').value.trim() || 'NKDA' };
   } else {
     patientId = document.getElementById('rx-patient').value;
     if(!patientId){ toast('Select or add a patient first.'); return; }
@@ -1047,7 +1047,7 @@ function renderPatients(){
     const count = state.prescriptions.filter(r=>r.patientId===p.id).length;
     return `<div class="patient-row" onclick="openPatient('${p.id}')">
       <div class="patient-avatar">${initials(p.name)}</div>
-      <div><div class="name">${esc(p.name)}</div><div class="sub">DOB ${esc(p.dob||'—')} · ${esc(p.gp||'No practice on file')}${p.allergies && p.allergies!=='NKDA' ? ' · Allergy: '+esc(p.allergies) : ''}</div></div>
+      <div><div class="name">${esc(p.name)}</div><div class="sub">DOB ${esc(p.dob||'—')}${p.address ? ' · '+esc(p.address) : ''} · ${esc(p.gp||'No practice on file')}${p.gpAddress ? ' ('+esc(p.gpAddress)+')' : ''}${p.allergies && p.allergies!=='NKDA' ? ' · Allergy: '+esc(p.allergies) : ''}</div></div>
       ${manage ? `<button class="btn ghost" style="padding:5px 10px; font-size:11.5px; margin-right:10px;" onclick="event.stopPropagation(); editPatient('${p.id}')">Edit</button>` : ''}
       <div class="count-pill">${count} script${count===1?'':'s'}</div>
     </div>`;
@@ -1064,8 +1064,9 @@ function showPatientForm(patient){
   document.getElementById('patient-form-title').textContent = patient ? 'Edit patient' : 'Add patient';
   document.getElementById('pat-name').value = patient?.name || '';
   document.getElementById('pat-dob').value = patient?.dob || '';
-  document.getElementById('pat-nhs').value = patient?.nhs || '';
+  document.getElementById('pat-address').value = patient?.address || '';
   document.getElementById('pat-gp').value = patient?.gp || '';
+  document.getElementById('pat-gp-address').value = patient?.gpAddress || '';
   document.getElementById('pat-allergies').value = (patient && patient.allergies !== 'NKDA') ? (patient.allergies || '') : '';
   document.getElementById('patient-form').style.display = 'block';
   document.getElementById('pat-name').focus();
@@ -1090,8 +1091,9 @@ document.getElementById('patient-form').addEventListener('submit', async e=>{
     p_id: editingPatientId,
     p_name: name,
     p_dob: document.getElementById('pat-dob').value || '',
-    p_nhs: document.getElementById('pat-nhs').value.trim(),
+    p_address: document.getElementById('pat-address').value.trim(),
     p_gp: document.getElementById('pat-gp').value.trim(),
+    p_gp_address: document.getElementById('pat-gp-address').value.trim(),
     p_allergies: document.getElementById('pat-allergies').value.trim()
   });
   if(error){ toast(error.message); return; }

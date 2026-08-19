@@ -21,10 +21,10 @@ on conflict (name) do nothing;
 -- Optional test patients (visible to pharmacy immediately; a prescriber only
 -- sees a patient once one of their own scripts references them). Remove if you
 -- would rather start from an empty patient list.
-insert into public.patients(name, dob, nhs, gp, allergies)
+insert into public.patients(name, dob, gp, allergies)
 select * from (values
-  ('Alison Reid',    '1979-03-11', '482 771 3390', 'Riverside Medical Practice', 'Penicillin'),
-  ('Marcus Ohene',   '2016-07-02', '',             'Bellfield Paediatric Clinic', 'NKDA'),
-  ('Priya Chandran', '1991-11-24', '560 214 9981', 'Willowburn Surgery',         'NKDA')
-) as v(name, dob, nhs, gp, allergies)
+  ('Alison Reid',    '1979-03-11', 'Riverside Medical Practice', 'Penicillin'),
+  ('Marcus Ohene',   '2016-07-02', 'Bellfield Paediatric Clinic', 'NKDA'),
+  ('Priya Chandran', '1991-11-24', 'Willowburn Surgery',         'NKDA')
+) as v(name, dob, gp, allergies)
 where not exists (select 1 from public.patients);
